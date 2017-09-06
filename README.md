@@ -1,2 +1,3 @@
-# am
+# @nodeswork/am
+
 Applet Manager for Nodeswork.
