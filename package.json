@@ -1,5 +1,5 @@
 {
-  "name": "@nodeswork/am",
+  "name": "@nodeswork/nam",
   "version": "0.0.1",
   "description": "Applet manager for Nodeswork containers.",
   "main": "dist/index.js",
@@ -19,7 +19,7 @@
   },
   "keywords": [
     "nodeswork",
-    "am"
+    "nam"
   ],
   "author": "andy@nodeswork.com",
   "license": "Apache-2.0",
