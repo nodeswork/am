@@ -4,6 +4,8 @@ import * as NodePersist from 'node-persist';
 const childProcess  = require('child-process-promise');
 const portFinder    = require('portfinder');
 
+export const sleep: (time: number) => Promise<void> = require('sleep-promise');
+
 export type LocalStorage = typeof NodePersist;
 
 export let localStorage: (path: string) => LocalStorage = _.memoize(

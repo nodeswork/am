@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
-import * as commander from 'commander';
+import * as fs           from 'fs-extra';
+import * as path         from 'path';
+import * as commander    from 'commander';
 
 import { AppletManager } from './applet-manager';
 
@@ -34,14 +36,27 @@ const appletManager = new AppletManager({
 
 (async () => {
   switch (cmd) {
-    case 'start':
-      await appletManager.start();
-      break;
     case 'stop':
       await appletManager.stop();
       break;
     case 'restart':
       await appletManager.stop();
+    case 'start':
+      if (appletManager.isStarted()) {
+        console.log('daemon is already started.');
+        process.exit(0);
+      }
+
+      const logPath = path.join(commander.appPath, 'logs/daemon');
+      fs.mkdirpSync(logPath);
+
+      const stdoutLog = path.join(logPath, 'stdout');
+      const stderrLog = path.join(logPath, 'stderr');
+
+      require('daemon')({
+        stdout: fs.openSync(stdoutLog, 'w'),
+        stderr: fs.openSync(stderrLog, 'w'),
+      });
       await appletManager.start();
       break;
   }

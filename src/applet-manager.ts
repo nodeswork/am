@@ -14,6 +14,7 @@ import {
   findPort,
   localStorage,
   LocalStorage,
+  sleep,
 }                         from './utils';
 import { app }            from './server';
 
@@ -195,6 +196,10 @@ export class AppletManager {
     return;
   }
 
+  isStarted(): boolean {
+    return this.options.pid != null;
+  }
+
   /**
    * Start the container.
    *
@@ -220,7 +225,11 @@ export class AppletManager {
    */
   async stop() {
     // Stop the applet manager.
-    process.kill(this.options.pid);
+    if (this.options.pid) {
+      process.kill(this.options.pid);
+      this.options.pid = null;
+      await sleep(1000);
+    }
   }
 
   async install(options: AppletImage) {
