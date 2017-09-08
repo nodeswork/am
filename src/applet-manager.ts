@@ -15,6 +15,7 @@ import {
   localStorage,
   LocalStorage,
 }                         from './utils';
+import { app }            from './server';
 
 const LOG = logger.getLogger();
 const APPLET_MANAGER_KEY = 'appletManager';
@@ -103,6 +104,8 @@ export class AppletManager {
     if (running) {
       this.options.pid    = amOptions.pid;
       this.options.token  = amOptions.token;
+    } else {
+      this.options.pid    = null;
     }
   }
 
@@ -198,7 +201,26 @@ export class AppletManager {
    * @throws UNAUTHENTICATED_ERROR
    */
   async start() {
+    if (this.options.pid != null) {
+      console.log('daemon has already started');
+      return;
+    }
+
     // Start the applet manager.
+    this.options.pid = process.pid;
+    this.ls.setItemSync(APPLET_MANAGER_KEY, this.options);
+    app.appletManager = this;
+    app.listen(this.options.port);
+  }
+
+  /**
+   * Stop the container.
+   *
+   * @throws UNAUTHENTICATED_ERROR
+   */
+  async stop() {
+    // Stop the applet manager.
+    process.kill(this.options.pid);
   }
 
   async install(options: AppletImage) {
