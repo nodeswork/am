@@ -23,6 +23,12 @@ const containerVersion = require('../package.json').version;
 const isRunning: (pid: number) => boolean = require('is-running');
 const machineId: () => string = require('node-machine-id').machineIdSync;
 
+export interface AuthOptions {
+  email:       string;
+  password:    string;
+  deviceName:  string;
+}
+
 export interface AppletManagerOptions {
   appPath:          string;
   nodesworkServer:  string;
@@ -109,9 +115,7 @@ export class AppletManager {
    *
    * @throws UNAUTHENTICATED_ERROR
    */
-  async authenticate(
-    options: { email: string, password: string, deviceName: string },
-  ): Promise<void> {
+  async authenticate(options: AuthOptions): Promise<void> {
     try {
       const resp = await request.post({
         baseUrl:     this.options.nodesworkServer,
@@ -176,8 +180,6 @@ export class AppletManager {
       this.options.token = resp.token;
       this.ls.setItemSync(APPLET_MANAGER_KEY, this.options);
       LOG.debug('Save token to local', this.options);
-
-      console.log( resp );
     } catch (e) {
       if (e.name === 'RequestError') {
         throw new NodesworkError('Server is not available', {
