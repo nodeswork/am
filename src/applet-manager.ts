@@ -4,12 +4,14 @@ import * as fs            from 'fs';
 import * as os            from 'os';
 import * as path          from 'path';
 import * as request       from 'request-promise';
+import { Docker }         from 'docker-cli-js';
 
 import * as logger        from '@nodeswork/logger';
 import { NodesworkError } from '@nodeswork/utils';
 
 import * as errors        from './errors';
 import {
+  findPort,
   localStorage,
   LocalStorage,
 }                         from './utils';
@@ -30,6 +32,22 @@ export interface AppletManagerOptions {
   // Automatically load or generated.
   pid?:             number;
   token?:           string;
+}
+
+export interface AppletRunOptions extends AppletImage {
+  port?:          number;
+}
+
+export interface AppletImage {
+  naType:         string;
+  naVersion:      string;
+  appletPackage:  string;
+  version:        string;
+}
+
+export interface AppletStatus extends AppletImage {
+  port:           number;
+  status:         string;
 }
 
 export class AppletManager {
@@ -178,5 +196,118 @@ export class AppletManager {
    * @throws UNAUTHENTICATED_ERROR
    */
   async start() {
+    // Start the applet manager.
   }
+
+  async install(options: AppletImage) {
+    const docker = new Docker();
+    const cmd = `build -t ${imageName(options)} \
+--build-arg package=${options.appletPackage} \
+--build-arg version=${options.version} \
+docker/${options.naType}/${options.naVersion}`;
+
+    LOG.debug('Execute command to install applet', { cmd });
+    try {
+      const result = await docker.command(cmd);
+      LOG.debug('Execute build command log', result);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async images(): Promise<AppletImage[]> {
+    const docker = new Docker();
+    const images = await docker.command('images');
+    return _.chain(images.images)
+      .filter((image) => {
+        const [na, naType, naVersion, ...others] = image.repository.split('-');
+        return na === 'na' && (
+          naType === 'npm'
+        ) && (
+          naVersion === '8.3.0'
+        );
+      })
+      .map((image) => {
+        const [na, naType, naVersion, ...others] = image.repository.split('-');
+        return {
+          naType,
+          naVersion,
+          appletPackage: others.join('-'),
+          version: image.tag,
+        };
+      })
+      .value();
+  }
+
+  async run(options: AppletRunOptions) {
+    if (options.port == null) {
+      options.port = await findPort();
+      LOG.debug('Find a free port to run', options.port);
+    }
+
+    const uniqueName = `na-npm-${options.appletPackage}_${options.version}`;
+    const image = imageName(options);
+    const cmd = `run --name ${uniqueName} -d -p ${options.port}:28900 ${image}`;
+
+    LOG.debug('Execute command to run applet', { cmd });
+
+    try {
+      const docker = new Docker();
+      const result = await docker.command(cmd);
+      LOG.debug('Execute build command log', result);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async ps(): Promise<AppletStatus[]> {
+    const docker = new Docker();
+    const result = await docker.command('ps');
+
+    return _.chain(result.containerList)
+      .map((container) => {
+        const image = parseAppletImage(container.image);
+        if (image == null) {
+          return null;
+        }
+        const port = parseMappingPort(container.ports);
+        return _.extend(
+          image,
+          {
+            port: port,
+            status: container.status,
+          },
+        );
+      })
+      .filter(_.identity)
+      .value();
+  }
+}
+
+function imageName(image: AppletImage): string {
+  return `na-${image.naType}-${image.naVersion}-${image.appletPackage}\
+:${image.version}`;
+}
+
+function parseAppletImage(imageName: string): AppletImage {
+  const [full, version] = imageName.split(':');
+  if (version == null) {
+    return null;
+  }
+
+  const [na, naType, naVersion, ...rest] = full.split('-');
+  if (na !== 'na' || (naType !== 'npm') || (naVersion !== '8.3.0') ||
+    rest.length == 0) {
+    return null;
+  }
+  return {
+    naType,
+    naVersion,
+    appletPackage: rest.join('-'),
+    version,
+  };
+}
+
+function parseMappingPort(ports: string): number {
+  return parseInt(ports.split(':')[1]);
 }

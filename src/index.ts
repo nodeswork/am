@@ -19,6 +19,41 @@ async function test() {
   } catch(e) {
     console.error(e);
   }
+
+  // try {
+    // await appletManager.install({
+      // naType: 'npm',
+      // naVersion: '8.3.0',
+      // appletPackage: 'nodeswork-helloworld',
+      // version: '0.0.7',
+    // });
+  // } catch (e) {
+    // console.error(e);
+  // }
+
+  // try {
+    // console.log(await appletManager.images());
+  // } catch (e) {
+    // console.error(e);
+  // }
+
+  // try {
+    // await appletManager.run({
+      // naType: 'npm',
+      // naVersion: '8.3.0',
+      // appletPackage: 'nodeswork-helloworld',
+      // version: '0.0.7',
+    // });
+  // } catch (e) {
+    // console.error(e);
+  // }
+
+  try {
+    console.log(await appletManager.ps());
+  } catch (e) {
+    console.error(e);
+  }
+
 }
 
 test();

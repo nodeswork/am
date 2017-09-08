@@ -3,8 +3,11 @@
   "version": "0.0.1",
   "description": "Applet manager for Nodeswork containers.",
   "main": "dist/index.js",
+  "bin": {
+    "nam": "dist/nam.js"
+  },
   "scripts": {
-    "build": "rm -rf dist && ./node_modules/.bin/gulp",
+    "build": "rm -rf dist && ./node_modules/.bin/gulp && chmod 755 dist/nam.js",
     "prepublish": "npm test && npm run build",
     "prestart": "npm run build",
     "start": "node dist/index.js",
@@ -39,11 +42,16 @@
   "dependencies": {
     "@nodeswork/logger": "^0.1.0",
     "@nodeswork/utils": "0.0.5",
+    "@types/commander": "^2.9.2",
     "@types/node-persist": "0.0.32",
     "@types/request-promise": "^4.1.37",
+    "child-process-promise": "^2.2.1",
+    "commander": "^2.9.0",
+    "docker-cli-js": "^2.1.1",
     "is-running": "^2.1.0",
     "node-machine-id": "^1.1.9",
     "node-persist": "^2.1.0",
+    "portfinder": "^1.0.13",
     "request": "^2.81.0",
     "request-promise": "^4.2.1",
     "winston": "^2.3.1"
