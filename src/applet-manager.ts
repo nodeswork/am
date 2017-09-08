@@ -58,6 +58,11 @@ export interface AppletStatus extends AppletImage {
   status:         string;
 }
 
+export interface RouteOptions {
+  appletPackage:  string;
+  version:        string;
+}
+
 export class AppletManager {
 
   ls:     LocalStorage;
@@ -314,6 +319,18 @@ docker/${options.naType}/${options.naVersion}`;
       })
       .filter(_.identity)
       .value();
+  }
+
+  async route(options: RouteOptions): Promise<string> {
+    const statuses = await this.ps();
+    const appletStatus: AppletStatus = _.find(
+      statuses,
+      (s) => (
+        s.appletPackage === options.appletPackage &&
+        s.version === options.version
+      ),
+    );
+    return appletStatus && `http://localhost:${appletStatus.port}`;
   }
 }
 
