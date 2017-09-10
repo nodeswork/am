@@ -1,6 +1,6 @@
-import * as request from 'request-promise';
-import * as Router from 'koa-router';
-import * as Koa from 'Koa';
+import * as request      from 'request-promise';
+import * as Router       from 'koa-router';
+import * as Koa          from 'Koa';
 
 import { AppletManager } from './applet-manager';
 
