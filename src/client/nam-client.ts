@@ -1,5 +1,7 @@
 import * as sbase from '@nodeswork/sbase';
 
+import { nam }    from '../def';
+
 @sbase.socket.socketRpcClient({
   eventNamePrefix: nam.socketRpcEventNamePrefix,
 })

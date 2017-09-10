@@ -10,3 +10,4 @@ commander
     28310,
   )
   .option('--debug', 'run in debug mode')
+;

@@ -17,6 +17,7 @@ import {
   sleep,
 }                         from './utils';
 import { app }            from './server';
+import { connectSocket }  from './socket';
 
 const LOG = logger.getLogger();
 const APPLET_MANAGER_KEY = 'appletManager';
@@ -216,11 +217,17 @@ export class AppletManager {
       return;
     }
 
+    if (this.options.token == null) {
+      throw errors.UNAUTHENTICATED_ERROR;
+    }
+
     // Start the applet manager.
     this.options.pid = process.pid;
     this.ls.setItemSync(APPLET_MANAGER_KEY, this.options);
     app.appletManager = this;
     app.listen(this.options.port);
+    connectSocket(this.options.nodesworkServer, this.options.token, this);
+    LOG.info(`Server is started at http://localhost:${this.options.port}`);
   }
 
   /**

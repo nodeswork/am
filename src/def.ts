@@ -1,4 +1,4 @@
-namespace nam {
+export namespace nam {
 
   export const socketRpcEventNamePrefix = 'socket-rpc.device';
 

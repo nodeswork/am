@@ -12,6 +12,7 @@ let cmd: string;
 
 commander
   .arguments('<cmd>')
+  .option('--no-daemon', 'disable daemon mode, direct output to console')
   .action((c) => {
     cmd = c;
   })
@@ -53,10 +54,12 @@ const appletManager = new AppletManager({
       const stdoutLog = path.join(logPath, 'stdout');
       const stderrLog = path.join(logPath, 'stderr');
 
-      require('daemon')({
-        stdout: fs.openSync(stdoutLog, 'w'),
-        stderr: fs.openSync(stderrLog, 'w'),
-      });
+      if (commander.daemon) {
+        require('daemon')({
+          stdout: fs.openSync(stdoutLog, 'w'),
+          stderr: fs.openSync(stderrLog, 'w'),
+        });
+      }
       await appletManager.start();
       break;
   }
