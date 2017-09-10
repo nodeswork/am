@@ -16,9 +16,7 @@ export function connectSocket(
   token:            string,
   appletManager:    AppletManager,
 ) {
-  nodesworkServer = 'http://localhost:3000/device'
-
-  const url = `${nodesworkServer}`;
+  const url = `${nodesworkServer}/device`;
   const socket = Socket(url, { query: `token=${token}`});
 
   LOG.info('Connecting to socket server', { url });
