@@ -5,7 +5,7 @@ export namespace nam {
   export interface AppletImage {
     naType:         string;
     naVersion:      string;
-    appletPackage:  string;
+    packageName:    string;
     version:        string;
   }
 
@@ -15,7 +15,7 @@ export namespace nam {
   }
 
   export interface RequestOptions {
-    appletPackage:             string;
+    packageName:               string;
     version:                   string;
     uri:                       string;
     method:                    string;

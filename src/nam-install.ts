@@ -19,15 +19,15 @@ const appletManager = new AppletManager({
 (async () => {
   const targets: AppletImage[] = [];
   for (const target of commander.args) {
-    const [appletPackage, version] = target.split('@');
-    if (appletPackage == null || version == null) {
+    const [packageName, version] = target.split('@');
+    if (packageName == null || version == null) {
       console.error('invalid target', target);
       process.exit(1);
     }
     targets.push({
       naType: 'npm',
       naVersion: '8.3.0',
-      appletPackage,
+      packageName,
       version,
     });
   }
@@ -35,7 +35,7 @@ const appletManager = new AppletManager({
   for (const target of targets) {
     await appletManager.install(target);
     console.log(
-      `install applet ${target.appletPackage}@${target.version} sucessfully`
+      `install applet ${target.packageName}@${target.version} sucessfully`
     );
   }
 })();

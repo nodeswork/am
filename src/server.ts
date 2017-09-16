@@ -18,7 +18,7 @@ const appletRouter = new Router();
 appletRouter
   .all(/(.*)/, async (ctx: Router.IRouterContext) => {
     const route = await app.appletManager.route({
-      appletPackage: ctx.params.appletPackage,
+      packageName: ctx.params.packageName,
       version: ctx.params.version,
     });
 
@@ -43,7 +43,7 @@ appletRouter
 
 router
   .get('/sstats', sstats)
-  .use('/applets/:appletPackage/v/:version', appletRouter.routes(), appletRouter.allowedMethods())
+  .use('/applets/:packageName/v/:version', appletRouter.routes(), appletRouter.allowedMethods())
 ;
 
 app

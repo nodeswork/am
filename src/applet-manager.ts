@@ -50,7 +50,7 @@ export interface AppletRunOptions extends AppletImage {
 export interface AppletImage {
   naType:         string;
   naVersion:      string;
-  appletPackage:  string;
+  packageName:    string;
   version:        string;
 }
 
@@ -60,7 +60,7 @@ export interface AppletStatus extends AppletImage {
 }
 
 export interface RouteOptions {
-  appletPackage:  string;
+  packageName:  string;
   version:        string;
 }
 
@@ -190,6 +190,8 @@ export class AppletManager {
       this.options.token = resp.token;
       this.ls.setItemSync(APPLET_MANAGER_KEY, this.options);
       LOG.debug('Save token to local', this.options);
+
+      await this.updateDevice();
     } catch (e) {
       if (e.name === 'RequestError') {
         throw new NodesworkError('Server is not available', {
@@ -228,6 +230,7 @@ export class AppletManager {
     app.listen(this.options.port);
     connectSocket(this.options.nodesworkServer, this.options.token, this);
     LOG.info(`Server is started at http://localhost:${this.options.port}`);
+    await this.updateDevice();
   }
 
   /**
@@ -247,7 +250,7 @@ export class AppletManager {
   async install(options: AppletImage) {
     const docker = new Docker();
     const cmd = `build -t ${imageName(options)} \
---build-arg package=${options.appletPackage} \
+--build-arg package=${options.packageName} \
 --build-arg version=${options.version} \
 docker/${options.naType}/${options.naVersion}`;
 
@@ -255,6 +258,7 @@ docker/${options.naType}/${options.naVersion}`;
     try {
       const result = await docker.command(cmd);
       LOG.debug('Execute build command log', result);
+      await this.updateDevice();
     } catch (e) {
       throw e;
     }
@@ -277,7 +281,7 @@ docker/${options.naType}/${options.naVersion}`;
         return {
           naType,
           naVersion,
-          appletPackage: others.join('-'),
+          packageName: others.join('-'),
           version: image.tag,
         };
       })
@@ -290,7 +294,7 @@ docker/${options.naType}/${options.naVersion}`;
       LOG.debug('Find a free port to run', options.port);
     }
 
-    const uniqueName = `na-npm-${options.appletPackage}_${options.version}`;
+    const uniqueName = `na-npm-${options.packageName}_${options.version}`;
     const image = imageName(options);
     const cmd = `run --name ${uniqueName} -d -p ${options.port}:28900 ${image}`;
 
@@ -300,6 +304,7 @@ docker/${options.naType}/${options.naVersion}`;
       const docker = new Docker();
       const result = await docker.command(cmd);
       LOG.debug('Execute build command log', result);
+      await this.updateDevice();
     } catch (e) {
       throw e;
     }
@@ -333,16 +338,44 @@ docker/${options.naType}/${options.naVersion}`;
     const appletStatus: AppletStatus = _.find(
       statuses,
       (s) => (
-        s.appletPackage === options.appletPackage &&
+        s.packageName === options.packageName &&
         s.version === options.version
       ),
     );
     return appletStatus && `http://localhost:${appletStatus.port}`;
   }
+
+  async updateDevice() {
+    if (this.options.token == null) {
+      throw errors.UNAUTHENTICATED_ERROR;
+    }
+
+    const installedApplets = await this.images();
+    const runningApplets = await this.ps();
+
+    try {
+      const resp = await request.post({
+        headers:             {
+          'device-token':    this.options.token,
+        },
+        baseUrl:             this.options.nodesworkServer,
+        uri:                 '/v1/d/devices',
+        body:                {
+          installedApplets,
+          runningApplets,
+        },
+        json:                true,
+        jar:                 true,
+      });
+      LOG.debug('Update device successfully');
+    } catch (e) {
+      throw e;
+    }
+  }
 }
 
 function imageName(image: AppletImage): string {
-  return `na-${image.naType}-${image.naVersion}-${image.appletPackage}\
+  return `na-${image.naType}-${image.naVersion}-${image.packageName}\
 :${image.version}`;
 }
 
@@ -360,7 +393,7 @@ function parseAppletImage(imageName: string): AppletImage {
   return {
     naType,
     naVersion,
-    appletPackage: rest.join('-'),
+    packageName: rest.join('-'),
     version,
   };
 }
