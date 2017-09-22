@@ -19,3 +19,8 @@ commander
 
 commander
   .parse(process.argv);
+
+if (commander.args.length && !commander._execs[commander.args[0]]) {
+  console.log(`Unkown command ${commander.args[0]}, try with --help`);
+  process.exit(1);
+}

@@ -292,6 +292,8 @@ export class AppletManager {
   }
 
   async run(options: AppletRunOptions) {
+    await this.checkEnvironment();
+
     if (options.port == null) {
       options.port = await findPort();
       LOG.debug('Find a free port to run', options.port);
@@ -310,7 +312,7 @@ export class AppletManager {
     }
 
     const image = imageName(options);
-    const cmd = `run --name ${uniqueName} -d -p ${options.port}:28900 ${image}`;
+    const cmd = `run --name ${uniqueName} --network nodeswork -d -p ${options.port}:28900 ${image}`;
 
     LOG.debug('Execute command to run applet', { cmd });
 
@@ -365,11 +367,13 @@ export class AppletManager {
     const networkResults = Object.values((
       await this.docker.command('network inspect nodeswork')
     ).object[0].Containers);
+
     return _.filter(psApplets, (psApplet) => {
       const appletName = `na-${psApplet.naType}-${psApplet.packageName}_${psApplet.version}`
       const networkResult = _.find(networkResults, (result) => {
-        result.Name === appletName;
+        return result.Name === appletName;
       });
+
       if (networkResult == null) {
         LOG.warn(
           `Applet ${appletName} is running but not in the correct network`,
