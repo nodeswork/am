@@ -19,6 +19,7 @@ import {
 import { app }            from './server';
 import { connectSocket }  from './socket';
 
+const latestVersion: (p: string) => Promise<string> = require('latest-version');
 const LOG = logger.getLogger();
 const APPLET_MANAGER_KEY = 'appletManager';
 
@@ -66,7 +67,10 @@ export interface RouteOptions {
 
 export class AppletManager {
 
-  ls:     LocalStorage;
+  ls:              LocalStorage;
+  docker:          Docker = new Docker();
+  network:         Network;
+  containerProxy:  ContainerProxy;
 
   constructor(private options: AppletManagerOptions) {
     if (this.options.debug) {
@@ -223,6 +227,8 @@ export class AppletManager {
       throw errors.UNAUTHENTICATED_ERROR;
     }
 
+    await this.checkEnvironment();
+
     // Start the applet manager.
     this.options.pid = process.pid;
     this.ls.setItemSync(APPLET_MANAGER_KEY, this.options);
@@ -249,10 +255,7 @@ export class AppletManager {
 
   async install(options: AppletImage) {
     const docker = new Docker();
-    const cmd = `build -t ${imageName(options)} \
---build-arg package=${options.packageName} \
---build-arg version=${options.version} \
-docker/${options.naType}/${options.naVersion}`;
+    const cmd = `build -t ${imageName(options)} --build-arg package=${options.packageName} --build-arg version=${options.version} docker/${options.naType}/${options.naVersion}`;
 
     LOG.debug('Execute command to install applet', { cmd });
     try {
@@ -338,10 +341,10 @@ docker/${options.naType}/${options.naVersion}`;
   }
 
   async ps(): Promise<AppletStatus[]> {
-    const docker = new Docker();
-    const result = await docker.command('ps');
+    await this.checkEnvironment();
 
-    return _.chain(result.containerList)
+    const psResult = await this.docker.command('ps');
+    const psApplets = _.chain(psResult.containerList)
       .map((container) => {
         const image = parseAppletImage(container.image);
         if (image == null) {
@@ -358,6 +361,24 @@ docker/${options.naType}/${options.naVersion}`;
       })
       .filter(_.identity)
       .value();
+
+    const networkResults = Object.values((
+      await this.docker.command('network inspect nodeswork')
+    ).object[0].Containers);
+    return _.filter(psApplets, (psApplet) => {
+      const appletName = `na-${psApplet.naType}-${psApplet.packageName}_${psApplet.version}`
+      const networkResult = _.find(networkResults, (result) => {
+        result.Name === appletName;
+      });
+      if (networkResult == null) {
+        LOG.warn(
+          `Applet ${appletName} is running but not in the correct network`,
+        );
+        return false;
+      }
+      psApplet.ip = networkResult.IPv4Address.split('/')[0];
+      return true;
+    });
   }
 
   async route(options: RouteOptions): Promise<string> {
@@ -399,6 +420,90 @@ docker/${options.naType}/${options.naVersion}`;
       throw e;
     }
   }
+
+  async checkEnvironment() {
+    // Step 1: Check network configuration
+    const networks = await this.docker.command('network ls');
+    const targetNetwork = _.find(
+      networks.network, (c: any) => c.name === 'nodeswork',
+    );
+
+    if (targetNetwork == null) {
+      LOG.debug('network is not setup, creating');
+      await this.docker.command('network create nodeswork --internal');
+    }
+
+    const inspect = await this.docker.command('network inspect nodeswork');
+    LOG.debug('inspecting network', inspect.object[0]);
+
+    const IPAMConfig = inspect.object[0].IPAM.Config[0];
+
+    this.network = {
+      subnet:      IPAMConfig.Subnet,
+      gateway:     IPAMConfig.Gateway,
+      containers:  inspect.object[0].Containers,
+    };
+
+    LOG.debug('Network configuration', this.network);
+
+    // Step 2: Check pre installed containers
+    // Step 2.1: Check proxy container
+
+    const containers = await this.docker.command('ps');
+    const proxyContainer = _.find(
+      containers.containerList,
+      (container: any) => container.names === 'nodeswork-container-proxy',
+    );
+
+    if (proxyContainer == null) {
+      LOG.debug('Container proxy is not running, starting');
+      await this.installContainerProxy();
+    } else {
+      const version = proxyContainer.image.split(':')[1];
+      const lVersion = await latestVersion('@nodeswork/container-proxy');
+      this.containerProxy = {
+        version,
+        latestVersion: lVersion,
+      };
+    }
+
+    const proxyInNetwork = _.find(this.network.containers, (container: any) => {
+      return container.Name === 'nodeswork-container-proxy';
+    });
+
+    if (proxyInNetwork == null) {
+      LOG.debug('Proxy container is not in network');
+      await this.docker.command(`network connect nodeswork nodeswork-container-proxy`);
+    }
+
+    LOG.debug('Container Proxy configuration', this.containerProxy);
+
+    LOG.debug('Environment setup correctly');
+  }
+
+  private async installContainerProxy() {
+    const version = await latestVersion('@nodeswork/container-proxy');
+    LOG.debug('Fetched latest version container-proxy', { version });
+
+    const output = await this.docker.command(
+      `build -t nodeswork-container-proxy:${version} docker/container-proxy --build-arg version=${version}`,
+    );
+    LOG.debug('Building container proxy', output);
+
+    try {
+      await this.docker.command(`rm nodeswork-container-proxy`);
+    } catch (e) {
+      LOG.debug('Remove container proxy error', e);
+    }
+
+    try {
+      await this.docker.command(`run --name nodeswork-container-proxy -d -e NAM_HOST=${os.hostname()} -e SUB_NET=${this.network.subnet} -p 28320:80 nodeswork-container-proxy:${version}`);
+    } catch (e) {
+      LOG.debug('Remove container proxy error', e);
+    }
+
+    this.containerProxy = { version, latestVersion: version };
+  }
 }
 
 function imageName(image: AppletImage): string {
@@ -427,4 +532,15 @@ function parseAppletImage(imageName: string): AppletImage {
 
 function parseMappingPort(ports: string): number {
   return parseInt(ports.split(':')[1]);
+}
+
+export interface Network {
+  subnet:      string;
+  gateway:     string;
+  containers:  object[];
+}
+
+export interface ContainerProxy {
+  version:        string;
+  latestVersion:  string;
 }

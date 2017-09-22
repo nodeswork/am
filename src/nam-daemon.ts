@@ -36,31 +36,40 @@ const appletManager = new AppletManager({
 });
 
 (async () => {
-  switch (cmd) {
-    case 'stop':
-      await appletManager.stop();
-      break;
-    case 'restart':
-      await appletManager.stop();
-    case 'start':
-      if (appletManager.isStarted()) {
-        console.log('daemon is already started.');
-        process.exit(0);
-      }
+  try {
+    switch (cmd) {
+      case 'stop':
+        await appletManager.stop();
+        break;
+      case 'restart':
+        await appletManager.stop();
+      case 'start':
+        if (appletManager.isStarted()) {
+          console.log('daemon is already started.');
+          process.exit(0);
+        }
 
-      const logPath = path.join(commander.appPath, 'logs/daemon');
-      fs.mkdirpSync(logPath);
+        const logPath = path.join(commander.appPath, 'logs/daemon');
+        fs.mkdirpSync(logPath);
 
-      const stdoutLog = path.join(logPath, 'stdout');
-      const stderrLog = path.join(logPath, 'stderr');
+        const stdoutLog = path.join(logPath, 'stdout');
+        const stderrLog = path.join(logPath, 'stderr');
 
-      if (commander.daemon) {
-        require('daemon')({
-          stdout: fs.openSync(stdoutLog, 'w'),
-          stderr: fs.openSync(stderrLog, 'w'),
-        });
-      }
-      await appletManager.start();
-      break;
+        if (commander.daemon) {
+          require('daemon')({
+            stdout: fs.openSync(stdoutLog, 'w'),
+            stderr: fs.openSync(stderrLog, 'w'),
+          });
+        }
+        await appletManager.start();
+        break;
+    }
+  } catch (e) {
+    if (commander.debug) {
+      console.error(e);
+    } else {
+      console.error(e.message);
+    }
+    process.exit(1);
   }
 })();
