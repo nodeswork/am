@@ -13,6 +13,7 @@ commander
   .command('daemon', 'manage the daemon')
   .command('install [package]', 'install an applet')
   .command('run [package]', 'run an applet')
+  .command('kill [package]', 'kill an applet')
   .command('ps', 'list running applets')
 ;
 

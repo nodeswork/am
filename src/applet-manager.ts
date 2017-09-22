@@ -295,8 +295,35 @@ docker/${options.naType}/${options.naVersion}`;
     }
 
     const uniqueName = `na-npm-${options.packageName}_${options.version}`;
+
+    const rmCmd = `rm ${uniqueName}`;
+    LOG.debug('Execute command to run applet', { cmd: rmCmd });
+    try {
+      const docker = new Docker();
+      const result = await docker.command(rmCmd);
+      LOG.debug('Execute build command log', result);
+    } catch (e) {
+      LOG.debug('Container does not exist');
+    }
+
     const image = imageName(options);
     const cmd = `run --name ${uniqueName} -d -p ${options.port}:28900 ${image}`;
+
+    LOG.debug('Execute command to run applet', { cmd });
+
+    try {
+      const docker = new Docker();
+      const result = await docker.command(cmd);
+      LOG.debug('Execute build command log', result);
+      await this.updateDevice();
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async kill(options: AppletRunOptions) {
+    const uniqueName = `na-npm-${options.packageName}_${options.version}`;
+    const cmd = `stop ${uniqueName}`;
 
     LOG.debug('Execute command to run applet', { cmd });
 
