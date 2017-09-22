@@ -1,6 +1,7 @@
 import * as request      from 'request-promise';
 import * as Router       from 'koa-router';
 import * as Koa          from 'Koa';
+import * as url          from 'url';
 
 import { AppletManager } from './applet-manager';
 
@@ -12,14 +13,17 @@ export const app: Application = new Application();
 
 const router = new Router();
 const version = require('../package.json').version;
+const proxy = request.defaults({
+  proxy: 'http://localhost:28320',
+});
 
 const appletRouter = new Router();
 
 appletRouter
   .all(/(.*)/, async (ctx: Router.IRouterContext) => {
     const route = await app.appletManager.route({
-      packageName: ctx.params.packageName,
-      version: ctx.params.version,
+      packageName:  ctx.params.packageName as string,
+      version:      ctx.params.version as string,
     });
 
     if (route == null) {
@@ -27,12 +31,16 @@ appletRouter
       return;
     }
 
+    const uri = new url.URL('/' + ctx.params[0], route);
+
     try {
-      const resp = await request({
-        method: ctx.request.method,
-        baseUrl: route,
-        uri: ctx.params[0],
-        resolveWithFullResponse: true,
+      const resp = await proxy({
+        headers:                  {
+          'X-ROUTE-TO':           'INTERNAL',
+        },
+        method:                   ctx.request.method,
+        uri:                      uri.toString(),
+        resolveWithFullResponse:  true,
       });
       transformResponse(resp, ctx);
     } catch (e) {

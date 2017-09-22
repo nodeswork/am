@@ -62,7 +62,7 @@ export interface AppletStatus extends AppletImage {
 
 export interface RouteOptions {
   packageName:  string;
-  version:        string;
+  version:      string;
 }
 
 export class AppletManager {
@@ -394,7 +394,7 @@ export class AppletManager {
         s.version === options.version
       ),
     );
-    return appletStatus && `http://localhost:${appletStatus.port}`;
+    return appletStatus && `http://na-${appletStatus.naType}-${appletStatus.packageName}_${appletStatus.version}:${appletStatus.port}`;
   }
 
   async updateDevice() {
