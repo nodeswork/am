@@ -352,11 +352,11 @@ export class AppletManager {
         if (image == null) {
           return null;
         }
-        const port = parseMappingPort(container.ports);
+        const port = parseMappingPort(container.ports) || 28900;
         return _.extend(
           image,
           {
-            port: port,
+            port,
             status: container.status,
           },
         );
