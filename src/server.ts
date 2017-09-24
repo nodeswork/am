@@ -45,9 +45,19 @@ const httpServerCallback = async function(
       version:      result[2],
     });
 
+    const newPath = result[3] || '';
+
+    if (newPath === 'sstruct') {
+      const origin = req.headers.origin;
+      if (origin != null) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+      }
+    }
+
     if (route != null) {
-      req.url = result[3] || '';
-      req.headers['X-TO-APPLET'] = route;
+      req.url                     = newPath;
+      req.headers['X-TO-APPLET']  = route;
       proxy.web(req, res, {
         target:      'http://localhost:28320',
         xfwd:         true,
