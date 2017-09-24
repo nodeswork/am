@@ -16,7 +16,7 @@ import {
   LocalStorage,
   sleep,
 }                         from './utils';
-import { app }            from './server';
+import { app, server }    from './server';
 import { connectSocket }  from './socket';
 
 const latestVersion: (p: string) => Promise<string> = require('latest-version');
@@ -233,7 +233,7 @@ export class AppletManager {
     this.options.pid = process.pid;
     this.ls.setItemSync(APPLET_MANAGER_KEY, this.options);
     app.appletManager = this;
-    app.listen(this.options.port);
+    server.listen(this.options.port);
     connectSocket(this.options.nodesworkServer, this.options.token, this);
     LOG.info(`Server is started at http://localhost:${this.options.port}`);
     await this.updateDevice();
@@ -394,7 +394,7 @@ export class AppletManager {
         s.version === options.version
       ),
     );
-    return appletStatus && `http://na-${appletStatus.naType}-${appletStatus.packageName}_${appletStatus.version}:${appletStatus.port}`;
+    return appletStatus && `na-${appletStatus.naType}-${appletStatus.packageName}_${appletStatus.version}:${appletStatus.port}`;
   }
 
   async updateDevice() {
