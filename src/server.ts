@@ -23,34 +23,8 @@ const version    = require('../package.json').version;
 const proxy      = httpProxy.createProxyServer({
 });
 
-const appletRouter = new Router();
-
-appletRouter
-  .all(/(.*)/, async (ctx: Router.IRouterContext) => {
-
-    // console.log('uri', uri.toString());
-    // await new Promise((resolve, reject) => {
-    // });
-
-    // try {
-      // const resp = await proxy({
-        // headers:                  {
-          // 'X-ROUTE-TO':           'INTERNAL',
-        // },
-        // method:                   ctx.request.method,
-        // uri:                      uri.toString(),
-        // resolveWithFullResponse:  true,
-      // });
-      // transformResponse(resp, ctx);
-    // } catch (e) {
-      // transformResponse(e.response, ctx);
-    // }
-  })
-;
-
 router
   .get('/sstats', sstats)
-  .use('/applets/:packageName/v/:version', appletRouter.routes(), appletRouter.allowedMethods())
 ;
 
 app
@@ -89,8 +63,6 @@ const httpServerCallback = async function(
       LOG.warn('Route not found', { path: result[0] });
     }
   }
-
-  console.log('path', path, result);
   callback(req, res);
 };
 
@@ -106,12 +78,4 @@ async function sstats(ctx: Router.IRouterContext) {
       status: await app.appletManager.ps(),
     },
   };
-}
-
-function transformResponse(resp: any, ctx: Router.IRouterContext) {
-  ctx.status = resp.statusCode || 500;
-  if (resp.body) {
-    console.log(resp);
-    ctx.body = resp.body;
-  }
 }
