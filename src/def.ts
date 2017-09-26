@@ -31,6 +31,11 @@ export namespace nam {
     body:                      object;
   }
 
+  export interface Worker {
+    name:    string;
+    action:  string;
+  }
+
   export interface INAM {
 
     install(options: AppletImage): Promise<void>;
@@ -40,6 +45,10 @@ export namespace nam {
     run(options: AppletImage): Promise<void>;
 
     ps(): Promise<AppletStatus[]>;
+
+    kill(options: AppletImage): Promise<void>;
+
+    work(options: AppletImage, worker: Worker): Promise<any>;
 
     request<T>(options: RequestOptions): Promise<RequestResponse | T>;
   }

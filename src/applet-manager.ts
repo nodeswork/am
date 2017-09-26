@@ -18,6 +18,7 @@ import {
 }                         from './utils';
 import { app, server }    from './server';
 import { connectSocket }  from './socket';
+import { nam }            from './def';
 
 const latestVersion: (p: string) => Promise<string> = require('latest-version');
 const LOG = logger.getLogger();
@@ -44,28 +45,12 @@ export interface AppletManagerOptions {
   token?:           string;
 }
 
-export interface AppletRunOptions extends AppletImage {
-  port?:          number;
-}
-
-export interface AppletImage {
-  naType:         string;
-  naVersion:      string;
-  packageName:    string;
-  version:        string;
-}
-
-export interface AppletStatus extends AppletImage {
-  port:           number;
-  status:         string;
-}
-
 export interface RouteOptions {
   packageName:  string;
   version:      string;
 }
 
-export class AppletManager {
+export class AppletManager implements nam.INAM {
 
   ls:              LocalStorage;
   docker:          Docker = new Docker();
@@ -253,7 +238,7 @@ export class AppletManager {
     }
   }
 
-  async install(options: AppletImage) {
+  async install(options: nam.AppletImage) {
     const docker = new Docker();
     const cmd = `build -t ${imageName(options)} --build-arg package=${options.packageName} --build-arg version=${options.version} docker/${options.naType}/${options.naVersion}`;
 
@@ -267,7 +252,7 @@ export class AppletManager {
     }
   }
 
-  async images(): Promise<AppletImage[]> {
+  async images(): Promise<nam.AppletImage[]> {
     const docker = new Docker();
     const images = await docker.command('images');
     return _.chain(images.images)
@@ -291,13 +276,8 @@ export class AppletManager {
       .value();
   }
 
-  async run(options: AppletRunOptions) {
+  async run(options: nam.AppletImage) {
     await this.checkEnvironment();
-
-    if (options.port == null) {
-      options.port = await findPort();
-      LOG.debug('Find a free port to run', options.port);
-    }
 
     const uniqueName = `na-npm-${options.packageName}_${options.version}`;
 
@@ -312,7 +292,7 @@ export class AppletManager {
     }
 
     const image = imageName(options);
-    const cmd = `run --name ${uniqueName} --network nodeswork -d -p ${options.port}:28900 ${image}`;
+    const cmd = `run --name ${uniqueName} --network nodeswork -d ${image}`;
 
     LOG.debug('Execute command to run applet', { cmd });
 
@@ -327,7 +307,7 @@ export class AppletManager {
     }
   }
 
-  async kill(options: AppletRunOptions) {
+  async kill(options: nam.AppletImage) {
     const uniqueName = `na-npm-${options.packageName}_${options.version}`;
     const cmd = `stop ${uniqueName}`;
 
@@ -343,7 +323,7 @@ export class AppletManager {
     }
   }
 
-  async ps(): Promise<AppletStatus[]> {
+  async ps(): Promise<nam.AppletStatus[]> {
     await this.checkEnvironment();
 
     const psResult = await this.docker.command('ps');
@@ -386,9 +366,22 @@ export class AppletManager {
     });
   }
 
+  async work(options: nam.AppletImage, worker: nam.Worker): Promise<any> {
+    return {
+      options,
+      worker,
+    };
+  }
+
+  async request<T>(
+    options: nam.RequestOptions,
+  ): Promise<nam.RequestResponse | T> {
+    return null;
+  }
+
   async route(options: RouteOptions): Promise<string> {
     const statuses = await this.ps();
-    const appletStatus: AppletStatus = _.find(
+    const appletStatus: nam.AppletStatus = _.find(
       statuses,
       (s) => (
         s.packageName === options.packageName &&
@@ -511,12 +504,12 @@ export class AppletManager {
   }
 }
 
-function imageName(image: AppletImage): string {
+function imageName(image: nam.AppletImage): string {
   return `na-${image.naType}-${image.naVersion}-${image.packageName}\
 :${image.version}`;
 }
 
-function parseAppletImage(imageName: string): AppletImage {
+function parseAppletImage(imageName: string): nam.AppletImage {
   const [full, version] = imageName.split(':');
   if (version == null) {
     return null;
