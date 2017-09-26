@@ -302,7 +302,7 @@ export class AppletManager {
     const uniqueName = `na-npm-${options.packageName}_${options.version}`;
 
     const rmCmd = `rm ${uniqueName}`;
-    LOG.debug('Execute command to run applet', { cmd: rmCmd });
+    LOG.debug('Execute command to rm applet', { cmd: rmCmd });
     try {
       const docker = new Docker();
       const result = await docker.command(rmCmd);
@@ -319,9 +319,10 @@ export class AppletManager {
     try {
       const docker = new Docker();
       const result = await docker.command(cmd);
-      LOG.debug('Execute build command log', result);
+      LOG.debug('Execute run command result', result);
       await this.updateDevice();
     } catch (e) {
+      LOG.error('Execute run command failed', e);
       throw e;
     }
   }

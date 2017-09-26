@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
-import * as fs                 from 'fs-extra';
-import * as path               from 'path';
-import * as commander          from 'commander';
+import * as fs          from 'fs-extra';
+import * as path        from 'path';
+import * as commander   from 'commander';
 
-import { createAppletManager } from './cli-command';
+import {
+  createAppletManager,
+  extractCommonOptions,
+}                       from './cli-command';
 
 let cmd: string;
 
@@ -29,6 +32,8 @@ if (cmd !== 'start' && cmd !== 'stop' && cmd != 'restart') {
 const appletManager = createAppletManager();
 
 (async () => {
+  const options = extractCommonOptions();
+
   try {
     switch (cmd) {
       case 'stop':
@@ -42,7 +47,8 @@ const appletManager = createAppletManager();
           process.exit(0);
         }
 
-        const logPath = path.join(commander.appPath, 'logs/daemon');
+
+        const logPath = path.join(options.appPath, 'logs/daemon');
         fs.mkdirpSync(logPath);
 
         const stdoutLog = path.join(logPath, 'stdout');
@@ -58,7 +64,7 @@ const appletManager = createAppletManager();
         break;
     }
   } catch (e) {
-    if (commander.debug) {
+    if (options.debug) {
       console.error(e);
     } else {
       console.error(e.message);
