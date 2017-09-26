@@ -1,20 +1,15 @@
 #!/usr/bin/env node
 
-import * as commander from 'commander';
+import * as commander          from 'commander';
 
-import { AppletManager, AppletImage } from './applet-manager';
+import { AppletImage }         from '../applet-manager';
 
-import './cli-command';
+import { createAppletManager } from './cli-command';
 
 commander
   .parse(process.argv)
 
-const appletManager = new AppletManager({
-  appPath:          commander.appPath,
-  nodesworkServer:  commander.nodesworkServer,
-  port:             commander.port,
-  debug:            commander.debug,
-});
+const appletManager = createAppletManager();
 
 (async () => {
   const targets: AppletImage[] = [];
@@ -33,9 +28,9 @@ const appletManager = new AppletManager({
   }
 
   for (const target of targets) {
-    await appletManager.install(target);
+    await appletManager.run(target);
     console.log(
-      `install applet ${target.packageName}@${target.version} sucessfully`
+      `run applet ${target.packageName}@${target.version} sucessfully`
     );
   }
 })();

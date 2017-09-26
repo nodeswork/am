@@ -1,12 +1,10 @@
 #!/usr/bin/env node
 
-import * as fs           from 'fs-extra';
-import * as path         from 'path';
-import * as commander    from 'commander';
+import * as fs                 from 'fs-extra';
+import * as path               from 'path';
+import * as commander          from 'commander';
 
-import { AppletManager } from './applet-manager';
-
-import './cli-command';
+import { createAppletManager } from './cli-command';
 
 let cmd: string;
 
@@ -28,21 +26,16 @@ if (cmd !== 'start' && cmd !== 'stop' && cmd != 'restart') {
   process.exit(1);
 }
 
-const appletManager = new AppletManager({
-  appPath:          commander.appPath,
-  nodesworkServer:  commander.nodesworkServer,
-  port:             commander.port,
-  debug:            commander.debug,
-});
+const appletManager = createAppletManager();
 
 (async () => {
   try {
     switch (cmd) {
       case 'stop':
-        await appletManager.stop();
+        await appletManager.stopServer();
         break;
       case 'restart':
-        await appletManager.stop();
+        await appletManager.stopServer();
       case 'start':
         if (appletManager.isStarted()) {
           console.log('daemon is already started.');
@@ -61,7 +54,7 @@ const appletManager = new AppletManager({
             stderr: fs.openSync(stderrLog, 'w'),
           });
         }
-        await appletManager.start();
+        await appletManager.startServer();
         break;
     }
   } catch (e) {

@@ -1,22 +1,21 @@
 #!/usr/bin/env node
 
-import * as commander from 'commander';
+import * as commander          from 'commander';
 
-import { AppletManager, AuthOptions } from './applet-manager';
+import { AuthOptions }         from '../applet-manager';
 
-import './cli-command';
+import { createAppletManager } from './cli-command';
 
 const prompt = require('prompt');
 
 commander
+  .action((x) => {
+    console.log('unknown argument:', x);
+    process.exit(1);
+  })
   .parse(process.argv)
 
-const appletManager = new AppletManager({
-  appPath:          commander.appPath,
-  nodesworkServer:  commander.nodesworkServer,
-  port:             commander.port,
-  debug:            commander.debug,
-});
+const appletManager = createAppletManager();
 
 const promptSchema = {
   properties: {

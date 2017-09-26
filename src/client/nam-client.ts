@@ -21,6 +21,9 @@ implements nam.INAM {
   async ps(): Promise<nam.AppletStatus[]> { return null; }
 
   @sbase.socket.remote()
+  async kill(options: nam.AppletImage): Promise<void> {}
+
+  @sbase.socket.remote()
   async request<T>(options: nam.RequestOptions):
     Promise<nam.RequestResponse | T> { return null; }
 }

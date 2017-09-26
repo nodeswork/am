@@ -217,7 +217,7 @@ export class AppletManager {
    *
    * @throws UNAUTHENTICATED_ERROR
    */
-  async start() {
+  async startServer() {
     if (this.options.pid != null) {
       console.log('daemon has already started');
       return;
@@ -244,7 +244,7 @@ export class AppletManager {
    *
    * @throws UNAUTHENTICATED_ERROR
    */
-  async stop() {
+  async stopServer() {
     // Stop the applet manager.
     if (this.options.pid) {
       process.kill(this.options.pid);

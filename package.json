@@ -4,10 +4,10 @@
   "description": "Applet manager for Nodeswork containers.",
   "main": "dist/index.js",
   "bin": {
-    "nam": "dist/nam.js"
+    "nam": "dist/cli/nam.js"
   },
   "scripts": {
-    "build": "rm -rf dist && ./node_modules/.bin/gulp && chmod 755 dist/nam.js",
+    "build": "rm -rf dist && ./node_modules/.bin/gulp && chmod 755 dist/cli/nam.js",
     "prepublish": "npm test && npm run build",
     "prestart": "npm run build",
     "start": "node dist/index.js",

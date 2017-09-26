@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import * as commander from 'commander';
+import * as commander    from 'commander';
 
-import { AppletManager } from './applet-manager';
+const version = require('../../package.json').version;
 
 commander
-  .version('1.0')
+  .version(version)
 
 commander
   .command('auth', 'authenticate for nam')
@@ -19,6 +19,7 @@ commander
 
 commander
   .parse(process.argv);
+
 
 if (commander.args.length && !commander._execs[commander.args[0]]) {
   console.log(`Unkown command ${commander.args[0]}, try with --help`);
