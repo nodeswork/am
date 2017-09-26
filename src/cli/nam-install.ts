@@ -2,7 +2,7 @@
 
 import * as commander          from 'commander';
 
-import { AppletImage }         from '../applet-manager';
+import { nam }                 from '../def';
 
 import { createAppletManager } from './cli-command';
 
@@ -12,7 +12,7 @@ commander
 const appletManager = createAppletManager();
 
 (async () => {
-  const targets: AppletImage[] = [];
+  const targets: nam.AppletImage[] = [];
   for (const target of commander.args) {
     const [packageName, version] = target.split('@');
     if (packageName == null || version == null) {
