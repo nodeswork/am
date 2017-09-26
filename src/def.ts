@@ -15,9 +15,12 @@ export namespace nam {
     status:         string;
   }
 
-  export interface RequestOptions {
-    packageName:               string;
-    version:                   string;
+  export interface RouteOptions {
+    packageName:  string;
+    version:      string;
+  }
+
+  export interface RequestOptions extends RouteOptions {
     uri:                       string;
     method:                    string;
     body?:                     object;

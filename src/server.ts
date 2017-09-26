@@ -1,14 +1,14 @@
-import * as request      from 'request-promise';
-import * as Router       from 'koa-router';
-import * as Koa          from 'Koa';
-import * as url          from 'url';
-import * as httpProxy    from 'http-proxy';
-import * as http         from 'http';
-import * as pathToRegexp from 'path-to-regexp';
+import * as Router           from 'koa-router';
+import * as Koa              from 'Koa';
+import * as url              from 'url';
+import * as httpProxy        from 'http-proxy';
+import * as http             from 'http';
+import * as pathToRegexp     from 'path-to-regexp';
 
-import * as logger       from '@nodeswork/logger';
+import * as logger           from '@nodeswork/logger';
 
-import { AppletManager } from './applet-manager';
+import { AppletManager }     from './applet-manager';
+import { containerProxyUrl } from './paths';
 
 const LOG = logger.getLogger();
 
@@ -59,7 +59,7 @@ const httpServerCallback = async function(
       req.url                     = newPath;
       req.headers['X-TO-APPLET']  = route;
       proxy.web(req, res, {
-        target:      'http://localhost:28320',
+        target:       containerProxyUrl,
         xfwd:         true,
         toProxy:      true,
       }, (e) => {

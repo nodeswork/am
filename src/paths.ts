@@ -4,6 +4,7 @@ import * as path          from 'path';
 import { NodesworkError } from '@nodeswork/utils';
 
 export let appPath: string;
+export const containerProxyUrl = 'http://localhost:28320';
 
 switch (os.type()) {
   case 'Darwin':

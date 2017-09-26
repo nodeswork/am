@@ -1,24 +1,25 @@
-import * as crypto        from 'crypto';
-import * as _             from 'underscore';
-import * as fs            from 'fs';
-import * as os            from 'os';
-import * as path          from 'path';
-import * as request       from 'request-promise';
-import { Docker }         from 'docker-cli-js';
+import * as crypto           from 'crypto';
+import * as _                from 'underscore';
+import * as fs               from 'fs';
+import * as os               from 'os';
+import * as path             from 'path';
+import * as request          from 'request-promise';
+import { Docker }            from 'docker-cli-js';
 
-import * as logger        from '@nodeswork/logger';
-import { NodesworkError } from '@nodeswork/utils';
+import * as logger           from '@nodeswork/logger';
+import { NodesworkError }    from '@nodeswork/utils';
 
-import * as errors        from './errors';
+import * as errors           from './errors';
 import {
   findPort,
   localStorage,
   LocalStorage,
   sleep,
-}                         from './utils';
-import { app, server }    from './server';
-import { connectSocket }  from './socket';
-import { nam }            from './def';
+}                            from './utils';
+import { app, server }       from './server';
+import { connectSocket }     from './socket';
+import { nam }               from './def';
+import { containerProxyUrl } from './paths';
 
 const latestVersion: (p: string) => Promise<string> = require('latest-version');
 const LOG = logger.getLogger();
@@ -43,11 +44,6 @@ export interface AppletManagerOptions {
   // Automatically load or generated.
   pid?:             number;
   token?:           string;
-}
-
-export interface RouteOptions {
-  packageName:  string;
-  version:      string;
 }
 
 export class AppletManager implements nam.INAM {
@@ -367,19 +363,41 @@ export class AppletManager implements nam.INAM {
   }
 
   async work(options: nam.AppletImage, worker: nam.Worker): Promise<any> {
-    return {
-      options,
-      worker,
+    LOG.info('Get work request', { options, worker });
+    const requestOptions: nam.RequestOptions = {
+      packageName: options.packageName,
+      version: options.version,
+      uri: `/workers/${worker.name}/${worker.action}`,
+      method: 'POST',
+      body: {},
     };
+    return await this.request(requestOptions);
   }
 
   async request<T>(
     options: nam.RequestOptions,
   ): Promise<nam.RequestResponse | T> {
-    return null;
+    LOG.info('Get request', { options });
+    const routeAddress = await this.route(options);
+    if (routeAddress == null) {
+      throw new NodesworkError('Applet is not running');
+    }
+
+    const headers = _.extend({}, options.headers, {
+      'X-TO-APPLET': routeAddress,
+    });
+
+    return await request({
+      uri:      containerProxyUrl + options.uri,
+      method:   options.method,
+      proxy:    containerProxyUrl,
+      body:     options.body,
+      headers,
+      json:     true,
+    });
   }
 
-  async route(options: RouteOptions): Promise<string> {
+  async route(options: nam.RouteOptions): Promise<string> {
     const statuses = await this.ps();
     const appletStatus: nam.AppletStatus = _.find(
       statuses,
