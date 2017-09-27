@@ -51,7 +51,7 @@ export namespace nam {
 
     kill(options: AppletImage): Promise<void>;
 
-    work(options: AppletImage, worker: Worker): Promise<any>;
+    work(options: AppletImage, worker: Worker, payload?: object): Promise<any>;
 
     request<T>(options: RequestOptions): Promise<RequestResponse | T>;
   }

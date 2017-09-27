@@ -363,14 +363,14 @@ export class AppletManager implements nam.INAM {
     });
   }
 
-  async work(options: nam.AppletImage, worker: nam.Worker): Promise<any> {
-    LOG.info('Get work request', { options, worker });
+  async work(options: nam.AppletImage, worker: nam.Worker, payload?: object): Promise<any> {
+    LOG.info('Get work request', { options, worker, payload });
     const requestOptions: nam.RequestOptions = {
       packageName: options.packageName,
       version: options.version,
       uri: `/workers/${worker.name}/${worker.action}`,
       method: 'POST',
-      body: {},
+      body: payload,
     };
     return await this.request(requestOptions);
   }
