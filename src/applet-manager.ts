@@ -6,6 +6,7 @@ import * as path             from 'path';
 import * as request          from 'request-promise';
 import { Docker }            from 'docker-cli-js';
 
+import * as sbase            from '@nodeswork/sbase';
 import * as logger           from '@nodeswork/logger';
 import { NodesworkError }    from '@nodeswork/utils';
 
@@ -383,18 +384,22 @@ export class AppletManager implements nam.INAM {
       throw new NodesworkError('Applet is not running');
     }
 
-    const headers = _.extend({}, options.headers, {
-      'X-TO-APPLET': routeAddress,
-    });
-
-    return await request({
+    const headers = _.extend({}, options.headers);
+    headers[sbase.constants.headers.request.NODESWORK_FORWARDED_TO] = (
+      routeAddress
+    );
+    const requestOptions = {
       uri:      containerProxyUrl + options.uri,
       method:   options.method,
       proxy:    containerProxyUrl,
       body:     options.body,
       headers,
       json:     true,
-    });
+    };
+    LOG.info('Request options', requestOptions);
+    const resp = await request(requestOptions);
+    LOG.info('Request response', resp);
+    return resp;
   }
 
   async route(options: nam.RouteOptions): Promise<string> {
@@ -446,7 +451,7 @@ export class AppletManager implements nam.INAM {
 
     if (targetNetwork == null) {
       LOG.debug('network is not setup, creating');
-      await this.docker.command('network create nodeswork --internal');
+      await this.docker.command('network create nodeswork');
     }
 
     const inspect = await this.docker.command('network inspect nodeswork');
@@ -513,7 +518,8 @@ export class AppletManager implements nam.INAM {
     }
 
     try {
-      await this.docker.command(`run --name nodeswork-container-proxy -d -e NAM_HOST=${os.hostname()} -e SUB_NET=${this.network.subnet} -p 28320:80 nodeswork-container-proxy:${version}`);
+      // sudo ifconfig lo0 alias 172.16.222.111
+      await this.docker.command(`run --name nodeswork-container-proxy -d -e NAM_HOST=172.16.222.111:28310 -e SUB_NET=${this.network.subnet} -p 28320:28320 nodeswork-container-proxy:${version}`);
     } catch (e) {
       LOG.debug('Remove container proxy error', e);
     }

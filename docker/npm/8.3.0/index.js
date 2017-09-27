@@ -1,1 +1,1 @@
-console.log(require(process.env.PACKAGE));
+console.log(require(process.env.NW_PACKAGE_NAME));

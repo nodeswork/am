@@ -7,9 +7,13 @@ COPY index.js .
 
 ARG package
 ARG version
+ARG appletToken
 
-ENV PACKAGE $package
-ENV TARGET  $package@$version
+ENV NW_NA_TYPE npm
+ENV NW_NA_VERSION 8.3.0
+ENV NW_PACKAGE_NAME $package
+ENV NW_PACKAGE_VERSION $version
+ENV NW_APPLET_TOKEN $appletToken
 
 RUN npm install ${package}@${version}
 

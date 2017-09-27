@@ -5,6 +5,7 @@ import * as httpProxy        from 'http-proxy';
 import * as http             from 'http';
 import * as pathToRegexp     from 'path-to-regexp';
 
+import * as sbase            from '@nodeswork/sbase';
 import * as logger           from '@nodeswork/logger';
 
 import { AppletManager }     from './applet-manager';
@@ -57,7 +58,7 @@ const httpServerCallback = async function(
 
     if (route != null) {
       req.url                     = newPath;
-      req.headers['X-TO-APPLET']  = route;
+      req.headers[sbase.constants.headers.request.NODESWORK_FORWARDED_TO] = route;
       proxy.web(req, res, {
         target:       containerProxyUrl,
         xfwd:         true,
