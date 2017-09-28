@@ -21,13 +21,13 @@ export function connectSocket(
 
   LOG.info('Connecting to socket server', { url });
 
+  sbase.socket.socketRpcHost(
+    socket, appletManager, nam.socketRpcEventNamePrefix,
+  );
+
   socket
     .on('connect', () => {
       LOG.info('Device socket is connected.');
-
-      sbase.socket.socketRpcHost(
-        socket, appletManager, nam.socketRpcEventNamePrefix,
-      );
     })
     .on('error', (msg: string) => {
       switch (msg) {
@@ -38,11 +38,11 @@ export function connectSocket(
       }
     })
     .on('connect_failed', () => {
-      LOG.info('Device socket connects failed');
+      LOG.error('Device socket connects failed');
     })
     .on('connect_error', () => {
       // Connection lost.
-      LOG.info('Device socket connection lost');
+      LOG.error('Device socket connection lost');
     })
     .on('disconnect', function() {
       LOG.error('Device socket disconnected', arguments);

@@ -365,7 +365,7 @@ export class AppletManager implements nam.INAM {
   }
 
   async work(options: nam.AppletImage, worker: nam.Worker, payload?: object): Promise<any> {
-    LOG.info('Get work request', { options, worker, payload });
+    LOG.debug('Get work request', { options, worker, payload });
     const requestOptions: nam.RequestOptions = {
       packageName: options.packageName,
       version: options.version,
@@ -397,9 +397,9 @@ export class AppletManager implements nam.INAM {
       headers,
       json:     true,
     };
-    LOG.info('Request options', requestOptions);
+    LOG.debug('Request options', requestOptions);
     const resp = await request(requestOptions);
-    LOG.info('Request response', resp);
+    LOG.debug('Request response', resp);
     return resp;
   }
 
