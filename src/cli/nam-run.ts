@@ -7,12 +7,14 @@ import { nam }                 from '../def';
 import { createAppletManager } from './cli-command';
 
 commander
+  .option('--applet-id [applet id]')
+  .option('--applet-token [applet token]')
   .parse(process.argv)
 
 const appletManager = createAppletManager();
 
 (async () => {
-  const targets: nam.AppletImage[] = [];
+  const targets: nam.AppletRunOptions[] = [];
   for (const target of commander.args) {
     const [packageName, version] = target.split('@');
     if (packageName == null || version == null) {
@@ -24,6 +26,8 @@ const appletManager = createAppletManager();
       naVersion: '8.3.0',
       packageName,
       version,
+      appletId: commander.appletId || 'applet-id-placeholder',
+      appletToken: commander.appletToken || 'applet-token-placeholder'
     });
   }
 
