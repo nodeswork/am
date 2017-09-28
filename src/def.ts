@@ -9,6 +9,11 @@ export namespace nam {
     version:        string;
   }
 
+  export interface AppletRunOptions extends AppletImage {
+    appletId:       string;
+    appletToken:    string;
+  }
+
   export interface AppletStatus extends AppletImage {
     ip:             string;
     port:           number;
@@ -39,13 +44,19 @@ export namespace nam {
     action:  string;
   }
 
+  export interface AccountOperateOptions {
+    accountId: string;
+    appletId:  string;
+    body:      string;
+  }
+
   export interface INAM {
 
     install(options: AppletImage): Promise<void>;
 
     images(): Promise<AppletImage[]>;
 
-    run(options: AppletImage): Promise<void>;
+    run(options: AppletRunOptions): Promise<void>;
 
     ps(): Promise<AppletStatus[]>;
 

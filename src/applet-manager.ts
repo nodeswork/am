@@ -9,6 +9,7 @@ import { Docker }            from 'docker-cli-js';
 import * as sbase            from '@nodeswork/sbase';
 import * as logger           from '@nodeswork/logger';
 import { NodesworkError }    from '@nodeswork/utils';
+import * as applet           from '@nodeswork/applet';
 
 import * as errors           from './errors';
 import {
@@ -273,7 +274,7 @@ export class AppletManager implements nam.INAM {
       .value();
   }
 
-  async run(options: nam.AppletImage) {
+  async run(options: nam.AppletRunOptions) {
     await this.checkEnvironment();
 
     const uniqueName = `na-npm-${options.packageName}_${options.version}`;
@@ -289,7 +290,7 @@ export class AppletManager implements nam.INAM {
     }
 
     const image = imageName(options);
-    const cmd = `run --name ${uniqueName} --network nodeswork -d ${image}`;
+    const cmd = `run --name ${uniqueName} --network nodeswork -d ${image} -e ${applet.constants.environmentKeys.APPLET_ID}=${options.appletId} -e ${applet.constants.environmentKeys.APPLET_TOKEN}=${options.appletToken}`;
 
     LOG.debug('Execute command to run applet', { cmd });
 
@@ -400,6 +401,20 @@ export class AppletManager implements nam.INAM {
     const resp = await request(requestOptions);
     LOG.info('Request response', resp);
     return resp;
+  }
+
+  async operateAccount(options: nam.AccountOperateOptions): Promise<any> {
+    const requestOptions = {
+      uri:               `/v1/d/user-applets/${options.appletId}/accounts/${options.accountId}/operate`,
+      baseUrl:           this.options.nodesworkServer,
+      body:              options.body,
+      headers:           {
+        'device-token':  this.options.token,
+      },
+      json:              true,
+      jar:               true,
+    };
+    return await request.post(requestOptions);
   }
 
   async route(options: nam.RouteOptions): Promise<string> {

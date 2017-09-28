@@ -7,6 +7,8 @@ import * as pathToRegexp     from 'path-to-regexp';
 
 import * as sbase            from '@nodeswork/sbase';
 import * as logger           from '@nodeswork/logger';
+import * as applet           from '@nodeswork/applet';
+import { NodesworkError }    from '@nodeswork/utils';
 
 import { AppletManager }     from './applet-manager';
 import { containerProxyUrl } from './paths';
@@ -26,6 +28,20 @@ const proxy      = httpProxy.createProxyServer({
 
 router
   .get('/sstats', sstats)
+  .post('/accounts/:accountId/operate', async (ctx) => {
+    const appletId = ctx.request.get(applet.constants.headers.request.APPLET_ID);
+    if (appletId == null) {
+      throw NodesworkError.badRequest('applet id is missing');
+    }
+
+    const operateOptions = {
+      accountId: ctx.params.accountId,
+      appletId,
+      body: ctx.body,
+    };
+
+    ctx.body = await app.appletManager.operateAccount(operateOptions);
+  })
 ;
 
 app
@@ -38,6 +54,12 @@ const callback = app.callback();
 const httpServerCallback = async function(
   req: http.IncomingMessage, res: http.ServerResponse,
 ) {
+  LOG.info('Receiving request', {
+    url: req.url,
+    method: req.method,
+    headers: req.headers,
+  });
+
   const path = url.parse(req.url);
   const result = routerPathRegex.exec(path.pathname);
   if (result != null) {
