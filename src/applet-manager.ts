@@ -290,7 +290,7 @@ export class AppletManager implements nam.INAM {
     }
 
     const image = imageName(options);
-    const cmd = `run --name ${uniqueName} --network nodeswork -d ${image} -e ${applet.constants.environmentKeys.APPLET_ID}=${options.appletId} -e ${applet.constants.environmentKeys.APPLET_TOKEN}=${options.appletToken}`;
+    const cmd = `run --name ${uniqueName} --network nodeswork -d -e ${applet.constants.environmentKeys.APPLET_ID}=${options.appletId} -e ${applet.constants.environmentKeys.APPLET_TOKEN}=${options.appletToken} ${image}`;
 
     LOG.debug('Execute command to run applet', { cmd });
 
@@ -405,7 +405,7 @@ export class AppletManager implements nam.INAM {
 
   async operateAccount(options: nam.AccountOperateOptions): Promise<any> {
     const requestOptions = {
-      uri:               `/v1/d/user-applets/${options.appletId}/accounts/${options.accountId}/operate`,
+      uri:               `/v1/d/applets/${options.appletId}/accounts/${options.accountId}/operate`,
       baseUrl:           this.options.nodesworkServer,
       body:              options.body,
       headers:           {
