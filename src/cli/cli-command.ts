@@ -13,6 +13,7 @@ srcCommander
   .option('--nodeswork-server [url]')
   .option('--port [port]')
   .option('--debug')
+  .option('--dev')
 ;
 
 const DEFAULT_OPTIONS = {
@@ -50,8 +51,8 @@ export function extractCommonOptions(): CommonOptions {
   const result = _.extend(
     {},
     DEFAULT_OPTIONS,
-    _.pick(srcCommander, 'port', 'debug', 'nodesworkServer', 'appPath'),
-    _.pick(commander, 'port', 'debug', 'nodesworkServer', 'appPath'),
+    _.pick(srcCommander, 'port', 'debug', 'nodesworkServer', 'appPath', 'dev'),
+    _.pick(commander, 'port', 'debug', 'nodesworkServer', 'appPath', 'dev'),
   );
   return result;
 }

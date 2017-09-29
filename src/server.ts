@@ -11,7 +11,6 @@ import * as applet           from '@nodeswork/applet';
 import { NodesworkError }    from '@nodeswork/utils';
 
 import { AppletManager }     from './applet-manager';
-import { containerProxyUrl } from './paths';
 
 const LOG = logger.getLogger();
 
@@ -80,9 +79,11 @@ const httpServerCallback = async function(
 
     if (route != null) {
       req.url                     = newPath;
-      req.headers[sbase.constants.headers.request.NODESWORK_FORWARDED_TO] = route;
+      req.headers[sbase.constants.headers.request.NODESWORK_FORWARDED_TO] = (
+        route.route
+      );
       proxy.web(req, res, {
-        target:       containerProxyUrl,
+        target:       route.target,
         xfwd:         true,
         toProxy:      true,
       }, (e) => {

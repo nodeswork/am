@@ -42,6 +42,7 @@ export interface AppletManagerOptions {
   nodesworkServer:  string;
   port:             number;
   debug?:           boolean;
+  dev?:             boolean;
 
   // Automatically load or generated.
   pid?:             number;
@@ -387,10 +388,10 @@ export class AppletManager implements nam.INAM {
 
     const headers = _.extend({}, options.headers);
     headers[sbase.constants.headers.request.NODESWORK_FORWARDED_TO] = (
-      routeAddress
+      routeAddress.route
     );
     const requestOptions = {
-      uri:      containerProxyUrl + options.uri,
+      uri:      routeAddress.target + options.uri,
       method:   options.method,
       proxy:    containerProxyUrl,
       body:     options.body,
@@ -417,7 +418,29 @@ export class AppletManager implements nam.INAM {
     return await request.post(requestOptions);
   }
 
-  async route(options: nam.RouteOptions): Promise<string> {
+  async route(options: nam.RouteOptions): Promise<{
+    route: string;
+    target: string;
+  }> {
+    if (this.options.dev) {
+      try {
+        const devServer = await request({
+          uri:   'http://localhost:28900/sstats',
+          json:  true,
+        });
+        if (devServer.applet &&
+          devServer.applet.packageName === options.packageName &&
+          devServer.applet.packageVersion === options.version)  {
+          return {
+            route: 'localhost:28900',
+            target: 'http://localhost:28900',
+          };
+        }
+      } catch (e) {
+        // Fallback
+      }
+    }
+
     const statuses = await this.ps();
     const appletStatus: nam.AppletStatus = _.find(
       statuses,
@@ -426,7 +449,14 @@ export class AppletManager implements nam.INAM {
         s.version === options.version
       ),
     );
-    return appletStatus && `na-${appletStatus.naType}-${appletStatus.packageName}_${appletStatus.version}:${appletStatus.port}`;
+
+    if (appletStatus == null) {
+      return null;
+    }
+    return {
+      route: `na-${appletStatus.naType}-${appletStatus.packageName}_${appletStatus.version}:${appletStatus.port}`,
+      target: containerProxyUrl,
+    };
   }
 
   async updateDevice() {
