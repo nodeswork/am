@@ -23,6 +23,8 @@ import { connectSocket }     from './socket';
 import { nam }               from './def';
 import { containerProxyUrl } from './paths';
 
+import compareVersion = require('compare-version');
+
 const latestVersion: (p: string) => Promise<string> = require('latest-version');
 const LOG = logger.getLogger();
 const APPLET_MANAGER_KEY = 'appletManager';
@@ -393,7 +395,7 @@ export class AppletManager implements nam.INAM {
     const requestOptions = {
       uri:      routeAddress.target + options.uri,
       method:   options.method,
-      proxy:    containerProxyUrl,
+      proxy:    routeAddress.target,
       body:     options.body,
       headers,
       json:     true,
@@ -430,7 +432,7 @@ export class AppletManager implements nam.INAM {
         });
         if (devServer.applet &&
           devServer.applet.packageName === options.packageName &&
-          devServer.applet.packageVersion === options.version)  {
+          compareVersion(devServer.applet.packageVersion, options.version) >= 0) {
           return {
             route: 'localhost:28900',
             target: 'http://localhost:28900',
