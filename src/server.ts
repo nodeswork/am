@@ -18,6 +18,7 @@ export class Application extends Koa {
   appletManager: AppletManager;
 }
 
+const bodyParser              = require('koa-bodyparser');
 export const app: Application = new Application();
 
 const router     = new Router();
@@ -36,7 +37,7 @@ router
     const operateOptions = {
       accountId: ctx.params.accountId,
       appletId,
-      body: ctx.body,
+      body: ctx.request.body,
     };
 
     ctx.body = await app.appletManager.operateAccount(operateOptions);
@@ -44,6 +45,7 @@ router
 ;
 
 app
+  .use(bodyParser())
   .use(router.routes())
   .use(router.allowedMethods())
 ;
