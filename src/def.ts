@@ -40,8 +40,8 @@ export namespace nam {
   }
 
   export interface Worker {
+    handler: string;
     name:    string;
-    action:  string;
   }
 
   export interface AccountOperateOptions {

@@ -370,7 +370,7 @@ export class AppletManager implements nam.INAM {
     const requestOptions: nam.RequestOptions = {
       packageName: options.packageName,
       version: options.version,
-      uri: `/workers/${worker.name}/${worker.action}`,
+      uri: `/workers/${worker.handler}/${worker.name}`,
       method: 'POST',
       body: payload,
     };
