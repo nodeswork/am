@@ -15,6 +15,7 @@ export namespace nam {
   }
 
   export interface AppletStatus extends AppletImage {
+    appletId:       string;
     ip:             string;
     port:           number;
     status:         string;

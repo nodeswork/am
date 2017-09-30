@@ -40,7 +40,16 @@ router
       body: ctx.request.body,
     };
 
-    ctx.body = await app.appletManager.operateAccount(operateOptions);
+    try {
+      ctx.body = await app.appletManager.operateAccount(operateOptions);
+    } catch (e) {
+      if (e.name === 'StatusCodeError') {
+        ctx.status = e.statusCode;
+        ctx.body   = e.error;
+      } else {
+        throw e;
+      }
+    }
   })
 ;
 

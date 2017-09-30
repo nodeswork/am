@@ -34,7 +34,8 @@ const APPLET_MANAGER_KEY = 'appletManager';
 const containerVersion = require('../package.json').version;
 const isRunning: (pid: number) => boolean = require('is-running');
 const machineId: () => string = require('node-machine-id').machineIdSync;
-const UUID_NAMESPACE = '5daabcd8-f17e-568c-aa6f-da9d92c7032c';
+const UUID_NAMESPACE  = '5daabcd8-f17e-568c-aa6f-da9d92c7032c';
+const NAME_REGEX      = /^na-(\w+)-([0-9.]+)-([\w-]+)_([0-9.]+)-(\w+)$/;
 
 export interface AuthOptions {
   email:       string;
@@ -334,17 +335,14 @@ export class AppletManager implements nam.INAM {
     const psResult = await this.docker.command('ps');
     const psApplets = _.chain(psResult.containerList)
       .map((container) => {
-        const image = parseAppletImage(container.image);
+        const image = parseAppletImage(container.names);
         if (image == null) {
           return null;
         }
         const port = parseMappingPort(container.ports) || 28900;
         return _.extend(
           image,
-          {
-            port,
-            status: container.status,
-          },
+          { port, status: container.status },
         );
       })
       .filter(_.identity)
@@ -355,7 +353,7 @@ export class AppletManager implements nam.INAM {
     ).object[0].Containers);
 
     return _.filter(psApplets, (psApplet) => {
-      const appletName = `na-${psApplet.naType}-${psApplet.packageName}_${psApplet.version}`
+      const appletName = this.name(psApplet);
       const networkResult = _.find(networkResults, (result) => {
         return result.Name === appletName;
       });
@@ -711,22 +709,17 @@ function imageName(image: nam.AppletImage): string {
 :${image.version}`;
 }
 
-function parseAppletImage(imageName: string): nam.AppletImage {
-  const [full, version] = imageName.split(':');
-  if (version == null) {
-    return null;
-  }
-
-  const [na, naType, naVersion, ...rest] = full.split('-');
-  if (na !== 'na' || (naType !== 'npm') || (naVersion !== '8.3.0') ||
-    rest.length == 0) {
+function parseAppletImage(name: string): nam.RouteOptions {
+  const result = NAME_REGEX.exec(name);
+  if (result == null) {
     return null;
   }
   return {
-    naType,
-    naVersion,
-    packageName: rest.join('-'),
-    version,
+    naType:       result[1],
+    naVersion:    result[2],
+    packageName:  result[3],
+    version:      result[4],
+    appletId:     result[5],
   };
 }
 
