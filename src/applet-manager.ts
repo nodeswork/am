@@ -383,7 +383,7 @@ export class AppletManager implements nam.INAM {
         json:                true,
         jar:                 true,
       });
-      const newJobs = _
+      const newJobs: WorkerCronJob[] = _
         .chain(userApplets)
         .map((ua) => {
           const appletConfig = ua.config.appletConfig;
@@ -400,6 +400,7 @@ export class AppletManager implements nam.INAM {
             };
             return {
               jobUUID: uuid([
+                ua.applet._id,
                 ua._id,
                 image.naType,
                 image.naVersion,
@@ -408,10 +409,11 @@ export class AppletManager implements nam.INAM {
                 worker.handler,
                 worker.name,
               ].join(':'), UUID_NAMESPACE),
-              userApplet: ua._id,
-              applet: image,
+              appletId:    ua.applet._id,
+              userApplet:  ua._id,
+              image,
               worker,
-              schedule: workerConfig.schedule,
+              schedule:    workerConfig.schedule,
             };
           });
         })
@@ -457,7 +459,7 @@ export class AppletManager implements nam.INAM {
             }
             LOG.info('Create cron job successfully', _.omit(c, 'cronJob'));
             return c;
-          })(newJob as any);
+          })(newJob);
           this.cronJobs.push(cronJob);
         }
       }
@@ -482,14 +484,14 @@ export class AppletManager implements nam.INAM {
         accounts,
       };
       const result = await this.work({
-        route: {
-          appletId: job.appletId,
-          naType:   job.image.naType,
-          naVersion: job.image.naVersion,
-          packageName: job.image.packageName,
-          version: job.image.version,
+        route:          {
+          appletId:     job.appletId,
+          naType:       job.image.naType,
+          naVersion:    job.image.naVersion,
+          packageName:  job.image.packageName,
+          version:      job.image.version,
         },
-        worker: job.worker,
+        worker:         job.worker,
         payload,
       });
       LOG.info(
@@ -750,5 +752,5 @@ export interface WorkerCronJob {
   image:       nam.AppletImage;
   worker:      nam.Worker;
   schedule:    string;
-  cronJob:     CronJob;
+  cronJob?:    CronJob;
 }
