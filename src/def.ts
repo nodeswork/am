@@ -62,6 +62,10 @@ export namespace nam {
 
     kill(options: AppletImage): Promise<void>;
 
+    /**
+     * Execute a specific worker.  If payload is not provider, will trigger a
+     * service call to request the payload.
+     */
     work(options: AppletImage, worker: Worker, payload?: object): Promise<any>;
 
     request<T>(options: RequestOptions): Promise<RequestResponse | T>;

@@ -5,6 +5,8 @@ import * as os               from 'os';
 import * as path             from 'path';
 import * as request          from 'request-promise';
 import { Docker }            from 'docker-cli-js';
+import { CronJob }           from 'cron';
+import * as uuid             from 'uuid/v5';
 
 import * as sbase            from '@nodeswork/sbase';
 import * as logger           from '@nodeswork/logger';
@@ -32,6 +34,7 @@ const APPLET_MANAGER_KEY = 'appletManager';
 const containerVersion = require('../package.json').version;
 const isRunning: (pid: number) => boolean = require('is-running');
 const machineId: () => string = require('node-machine-id').machineIdSync;
+const UUID_NAMESPACE = '5daabcd8-f17e-568c-aa6f-da9d92c7032c';
 
 export interface AuthOptions {
   email:       string;
@@ -57,6 +60,7 @@ export class AppletManager implements nam.INAM {
   docker:          Docker = new Docker();
   network:         Network;
   containerProxy:  ContainerProxy;
+  cronJobs:        WorkerCronJob[] = [];
 
   constructor(private options: AppletManagerOptions) {
     if (this.options.debug) {
@@ -367,6 +371,128 @@ export class AppletManager implements nam.INAM {
     });
   }
 
+  async refreshWorkerCrons() {
+    const self = this;
+    try {
+      const userApplets = await request.get({
+        headers:             {
+          'device-token':    this.options.token,
+        },
+        baseUrl:             this.options.nodesworkServer,
+        uri:                 '/v1/d/user-applets',
+        json:                true,
+        jar:                 true,
+      });
+      const newJobs = _
+        .chain(userApplets)
+        .map((ua) => {
+          const appletConfig = ua.config.appletConfig;
+          const image: nam.AppletImage = {
+            naType: appletConfig.naType,
+            naVersion: appletConfig.naVersion,
+            packageName: appletConfig.packageName,
+            version: appletConfig.version,
+          };
+          return _.map(appletConfig.workers, (workerConfig: any) => {
+            const worker: nam.Worker = {
+              handler: workerConfig.handler,
+              name: workerConfig.name,
+            };
+            return {
+              jobUUID: uuid([
+                ua._id,
+                image.naType,
+                image.naVersion,
+                image.packageName,
+                image.version,
+                worker.handler,
+                worker.name,
+              ].join(':'), UUID_NAMESPACE),
+              userApplet: ua._id,
+              applet: image,
+              worker,
+              schedule: workerConfig.schedule,
+            };
+          });
+        })
+        .flatten()
+        .filter((x) => x.schedule != null)
+        .value();
+
+      LOG.debug('Fetch applets for current device successfully');
+
+      for (const cron of this.cronJobs) {
+        const u = _.find(newJobs, (newJob) => newJob.jobUUID === cron.jobUUID);
+        if (u == null) {
+          cron.cronJob.stop();
+          LOG.info(
+            'Stop cron job successfully', _.omit(cron, 'cronJob'),
+          );
+        }
+      }
+      for (const newJob of newJobs) {
+        const cron = _.find(this.cronJobs, (c) => newJob.jobUUID === c.jobUUID);
+        if (cron == null) {
+          const cronJob = (function (c: WorkerCronJob): WorkerCronJob {
+            try {
+              c.cronJob = new CronJob({
+                cronTime: c.schedule,
+                onTick: async () => {
+                  LOG.debug('Run cron job', _.omit(c, 'cronJob'));
+                  try {
+                    await self.executeCronJob(c);
+                    LOG.info(
+                      'Run cron job successfully', _.omit(c, 'cronJob'),
+                    );
+                  } catch (e) {
+                    LOG.error(
+                      'Run cron job failed', e, _.omit(c, 'cronJob'),
+                    );
+                  }
+                },
+                start: true,
+              });
+            } catch (e) {
+              LOG.error('Create cron job failed', _.omit(c, 'cronJob'));
+            }
+            LOG.info('Create cron job successfully', _.omit(c, 'cronJob'));
+            return c;
+          })(newJob as any);
+          this.cronJobs.push(cronJob);
+        }
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async executeCronJob(job: WorkerCronJob): Promise<any> {
+    try {
+      const accounts = await request.get({
+        headers:             {
+          'device-token':    this.options.token,
+        },
+        baseUrl:             this.options.nodesworkServer,
+        uri:                 `/v1/d/user-applets/${job.userApplet}/accounts`,
+        json:                true,
+        jar:                 true,
+      });
+      LOG.debug('Fetch accounts successfully', accounts);
+      const payload = {
+        accounts,
+      };
+      const result = await this.work(job.applet, job.worker, payload);
+      LOG.info(
+        'Execute cron job successfully.', {
+          job: _.omit(job, 'cronJob'),
+          result,
+        },
+      );
+    } catch (e) {
+      throw e;
+    }
+  }
+
   async work(options: nam.AppletImage, worker: nam.Worker, payload?: object): Promise<any> {
     LOG.debug('Get work request', { options, worker, payload });
     const requestOptions: nam.RequestOptions = {
@@ -487,6 +613,7 @@ export class AppletManager implements nam.INAM {
     } catch (e) {
       throw e;
     }
+    await this.refreshWorkerCrons();
   }
 
   async checkEnvironment() {
@@ -612,4 +739,13 @@ export interface Network {
 export interface ContainerProxy {
   version:        string;
   latestVersion:  string;
+}
+
+export interface WorkerCronJob {
+  jobUUID:     string;
+  userApplet:  string;
+  applet:      nam.AppletImage;
+  worker:      nam.Worker;
+  schedule:    string;
+  cronJob:     CronJob;
 }
