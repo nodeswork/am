@@ -20,9 +20,13 @@ export namespace nam {
     status:         string;
   }
 
-  export interface RouteOptions {
-    packageName:  string;
-    version:      string;
+  export interface RouteOptions extends AppletImage {
+    appletId:  string;
+  }
+
+  export interface Route {
+    route:   string;
+    target:  string;
   }
 
   export interface RequestOptions extends RouteOptions {
@@ -31,6 +35,12 @@ export namespace nam {
     body?:                     object;
     headers?:                  { [key: string]: string };
     resolveWithFullResponse?:  boolean;
+  }
+
+  export interface WorkOptions {
+    route:    RouteOptions;
+    worker:   Worker;
+    payload:  object;
   }
 
   export interface RequestResponse {
@@ -62,11 +72,7 @@ export namespace nam {
 
     kill(options: AppletImage): Promise<void>;
 
-    /**
-     * Execute a specific worker.  If payload is not provider, will trigger a
-     * service call to request the payload.
-     */
-    work(options: AppletImage, worker: Worker, payload?: object): Promise<any>;
+    work(options: WorkOptions): Promise<any>;
 
     request<T>(options: RequestOptions): Promise<RequestResponse | T>;
   }

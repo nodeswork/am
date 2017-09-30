@@ -50,26 +50,32 @@ app
   .use(router.allowedMethods())
 ;
 
-const routerPathRegex = pathToRegexp('/applets/:packageName/v/:version/:path*');
+const routerPathRegex = pathToRegexp(
+  '/applets/:appletId/:naType/:naVersion/:packageName/:version/:path*',
+);
 const callback = app.callback();
 const httpServerCallback = async function(
   req: http.IncomingMessage, res: http.ServerResponse,
 ) {
   LOG.info('Receiving request', {
-    url: req.url,
-    method: req.method,
-    headers: req.headers,
+    url:      req.url,
+    method:   req.method,
+    headers:  req.headers,
   });
 
   const path = url.parse(req.url);
   const result = routerPathRegex.exec(path.pathname);
   if (result != null) {
-    const route = await app.appletManager.route({
-      packageName:  result[1],
-      version:      result[2],
-    });
+    const appletId:     string = result[1];
+    const naType:       string = result[2];
+    const naVersion:    string = result[3];
+    const packageName:  string = result[4];
+    const version:      string = result[5];
+    const newPath:      string = result[6] || '';
 
-    const newPath = result[3] || '';
+    const route = await app.appletManager.route({
+      appletId, naType, naVersion, packageName, version,
+    });
 
     if (newPath === 'sstruct') {
       const origin = req.headers.origin;

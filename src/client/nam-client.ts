@@ -31,7 +31,7 @@ implements nam.INAM {
   @sbase.socket.remote({
     timeoutMillis: 30000,
   })
-  async work(options: nam.AppletImage, worker: nam.Worker, payload?: object): Promise<any> {}
+  async work(options: nam.WorkOptions): Promise<any> {}
 
   @sbase.socket.remote({
     timeoutMillis: 5000,

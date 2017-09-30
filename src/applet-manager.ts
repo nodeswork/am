@@ -284,7 +284,7 @@ export class AppletManager implements nam.INAM {
   async run(options: nam.AppletRunOptions) {
     await this.checkEnvironment();
 
-    const uniqueName = `na-npm-${options.packageName}_${options.version}`;
+    const uniqueName = this.name(options);
 
     const rmCmd = `rm ${uniqueName}`;
     LOG.debug('Execute command to rm applet', { cmd: rmCmd });
@@ -481,7 +481,17 @@ export class AppletManager implements nam.INAM {
       const payload = {
         accounts,
       };
-      const result = await this.work(job.applet, job.worker, payload);
+      const result = await this.work({
+        route: {
+          appletId: job.appletId,
+          naType:   job.image.naType,
+          naVersion: job.image.naVersion,
+          packageName: job.image.packageName,
+          version: job.image.version,
+        },
+        worker: job.worker,
+        payload,
+      });
       LOG.info(
         'Execute cron job successfully.', {
           job: _.omit(job, 'cronJob'),
@@ -493,14 +503,17 @@ export class AppletManager implements nam.INAM {
     }
   }
 
-  async work(options: nam.AppletImage, worker: nam.Worker, payload?: object): Promise<any> {
-    LOG.debug('Get work request', { options, worker, payload });
+  async work(options: nam.WorkOptions): Promise<any> {
+    LOG.debug('Get work request', options);
     const requestOptions: nam.RequestOptions = {
-      packageName: options.packageName,
-      version: options.version,
-      uri: `/workers/${worker.handler}/${worker.name}`,
-      method: 'POST',
-      body: payload,
+      appletId:     options.route.appletId,
+      naType:       options.route.naType,
+      naVersion:    options.route.naVersion,
+      packageName:  options.route.packageName,
+      version:      options.route.version,
+      uri:          `/workers/${options.worker.handler}/${options.worker.name}`,
+      method:       'POST',
+      body:         options.payload,
     };
     return await this.request(requestOptions);
   }
@@ -546,10 +559,7 @@ export class AppletManager implements nam.INAM {
     return await request.post(requestOptions);
   }
 
-  async route(options: nam.RouteOptions): Promise<{
-    route: string;
-    target: string;
-  }> {
+  async route(options: nam.RouteOptions): Promise<nam.Route> {
     if (this.options.dev) {
       try {
         const devServer = await request({
@@ -569,20 +579,8 @@ export class AppletManager implements nam.INAM {
       }
     }
 
-    const statuses = await this.ps();
-    const appletStatus: nam.AppletStatus = _.find(
-      statuses,
-      (s) => (
-        s.packageName === options.packageName &&
-        s.version === options.version
-      ),
-    );
-
-    if (appletStatus == null) {
-      return null;
-    }
     return {
-      route: `na-${appletStatus.naType}-${appletStatus.packageName}_${appletStatus.version}:${appletStatus.port}`,
+      route: `${this.name(options)}:28900`,
       target: containerProxyUrl,
     };
   }
@@ -676,6 +674,10 @@ export class AppletManager implements nam.INAM {
     LOG.debug('Environment setup correctly');
   }
 
+  private name(options: nam.RouteOptions): string {
+    return `na-${options.naType}-${options.naVersion}-${options.packageName}_${options.version}-${options.appletId}`;
+  }
+
   private async installContainerProxy() {
     const version = await latestVersion('@nodeswork/container-proxy');
     LOG.debug('Fetched latest version container-proxy', { version });
@@ -744,7 +746,8 @@ export interface ContainerProxy {
 export interface WorkerCronJob {
   jobUUID:     string;
   userApplet:  string;
-  applet:      nam.AppletImage;
+  appletId:    string;
+  image:       nam.AppletImage;
   worker:      nam.Worker;
   schedule:    string;
   cronJob:     CronJob;
