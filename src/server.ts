@@ -85,6 +85,7 @@ const httpServerCallback = async function(
     const route = await app.appletManager.route({
       appletId, naType, naVersion, packageName, version,
     });
+    LOG.debug('Got routes', route);
 
     if (newPath === 'sstruct') {
       const origin = req.headers.origin;
