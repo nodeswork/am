@@ -26,7 +26,7 @@ implements nam.INAM {
   @sbase.socket.remote({
     timeoutMillis: 30000,
   })
-  async kill(options: nam.AppletImage): Promise<void> {}
+  async kill(options: nam.RouteOptions): Promise<void> {}
 
   @sbase.socket.remote({
     timeoutMillis: 30000,

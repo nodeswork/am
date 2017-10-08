@@ -71,7 +71,7 @@ export namespace nam {
 
     ps(): Promise<AppletStatus[]>;
 
-    kill(options: AppletImage): Promise<void>;
+    kill(options: RouteOptions): Promise<void>;
 
     work(options: WorkOptions): Promise<any>;
 

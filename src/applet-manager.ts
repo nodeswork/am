@@ -313,8 +313,8 @@ export class AppletManager implements nam.INAM {
     }
   }
 
-  async kill(options: nam.AppletImage) {
-    const uniqueName = `na-npm-${options.packageName}_${options.version}`;
+  async kill(options: nam.RouteOptions) {
+    const uniqueName = this.name(options);
     const cmd = `stop ${uniqueName}`;
 
     LOG.debug('Execute command to run applet', { cmd });
