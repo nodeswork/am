@@ -19,12 +19,15 @@ export class Application extends Koa {
 }
 
 const bodyParser              = require('koa-bodyparser');
+const statuses                = require('statuses');
 export const app: Application = new Application();
 
 const router     = new Router();
 const version    = require('../package.json').version;
 const proxy      = httpProxy.createProxyServer({
 });
+
+statuses['470'] = 'Permission Denied';
 
 router
   .get('/sstats', sstats)

@@ -419,7 +419,7 @@ export class AppletManager implements nam.INAM {
         .filter((x) => x.schedule != null)
         .value();
 
-      LOG.debug('Fetch applets for current device successfully');
+      LOG.debug('Fetch applets for current device successfully', newJobs);
 
       for (const cron of this.cronJobs) {
         const u = _.find(newJobs, (newJob) => newJob.jobUUID === cron.jobUUID);
@@ -446,7 +446,7 @@ export class AppletManager implements nam.INAM {
                     );
                   } catch (e) {
                     LOG.error(
-                      'Run cron job failed', e, _.omit(c, 'cronJob'),
+                      'Run cron job failed', _.pick(e, 'name', 'statusCode', 'error', 'message'), _.omit(c, 'cronJob'),
                     );
                   }
                 },
@@ -461,6 +461,9 @@ export class AppletManager implements nam.INAM {
           this.cronJobs.push(cronJob);
         }
       }
+      this.cronJobs = _.filter(this.cronJobs, (cronJob: WorkerCronJob) => {
+        return cronJob.cronJob.running;
+      });
     } catch (e) {
       throw e;
     }
