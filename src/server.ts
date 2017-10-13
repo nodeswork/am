@@ -28,6 +28,19 @@ const proxy      = httpProxy.createProxyServer({
 
 router
   .get('/sstats', sstats)
+  .post('/executions/:executionId/metrics', async(ctx) => {
+    const appletId = ctx.request.get(applet.constants.headers.request.APPLET_ID);
+    if (appletId == null) {
+      throw NodesworkError.badRequest('applet id is missing');
+    }
+    ctx.body = await app.appletManager.updateExecutionMetrics(
+      ctx.params.executionId, {
+        dimensions:  ctx.request.body.dimensions,
+        name:        ctx.request.body.name,
+        value:       ctx.request.body.value,
+      },
+    );
+  })
   .post('/accounts/:accountId/operate', async (ctx) => {
     const appletId = ctx.request.get(applet.constants.headers.request.APPLET_ID);
     if (appletId == null) {

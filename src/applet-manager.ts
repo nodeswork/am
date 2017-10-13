@@ -1,29 +1,35 @@
-import * as crypto           from 'crypto';
-import * as _                from 'underscore';
-import * as fs               from 'fs';
-import * as os               from 'os';
-import * as path             from 'path';
-import * as request          from 'request-promise';
-import { Docker }            from 'docker-cli-js';
-import { CronJob }           from 'cron';
-import * as uuid             from 'uuid/v5';
+import * as crypto                 from 'crypto';
+import * as _                      from 'underscore';
+import * as fs                     from 'fs';
+import * as os                     from 'os';
+import * as path                   from 'path';
+import {
+  Request,
+  RequestAPI,
+  CoreOptions,
+  RequiredUriUrl,
+}                                  from 'request';
+import * as request                from 'request-promise';
+import { Docker }                  from 'docker-cli-js';
+import { CronJob }                 from 'cron';
+import * as uuid                   from 'uuid/v5';
 
-import * as sbase            from '@nodeswork/sbase';
-import * as logger           from '@nodeswork/logger';
-import { NodesworkError }    from '@nodeswork/utils';
-import * as applet           from '@nodeswork/applet';
+import * as sbase                  from '@nodeswork/sbase';
+import * as logger                 from '@nodeswork/logger';
+import { NodesworkError, metrics } from '@nodeswork/utils';
+import * as applet                 from '@nodeswork/applet';
 
-import * as errors           from './errors';
+import * as errors                 from './errors';
 import {
   findPort,
   localStorage,
   LocalStorage,
   sleep,
-}                            from './utils';
-import { app, server }       from './server';
-import { connectSocket }     from './socket';
-import { nam }               from './def';
-import { containerProxyUrl } from './paths';
+}                                  from './utils';
+import { app, server }             from './server';
+import { connectSocket }           from './socket';
+import { nam }                     from './def';
+import { containerProxyUrl }       from './paths';
 
 import compareVersion = require('compare-version');
 
@@ -57,11 +63,13 @@ export interface AppletManagerOptions {
 
 export class AppletManager implements nam.INAM {
 
-  ls:              LocalStorage;
-  docker:          Docker = new Docker();
-  network:         Network;
-  containerProxy:  ContainerProxy;
-  cronJobs:        WorkerCronJob[] = [];
+  ls:                 LocalStorage;
+  docker:             Docker = new Docker();
+  network:            Network;
+  containerProxy:     ContainerProxy;
+  cronJobs:           WorkerCronJob[] = [];
+
+  private serverApi:  RequestAPI<Request, CoreOptions, RequiredUriUrl>;
 
   constructor(private options: AppletManagerOptions) {
     if (this.options.debug) {
@@ -109,6 +117,15 @@ export class AppletManager implements nam.INAM {
     } else {
       this.options.pid    = null;
     }
+
+    this.serverApi = request.defaults({
+      headers:             {
+        'device-token':    this.options.token,
+      },
+      baseUrl:             this.options.nodesworkServer,
+      json:                true,
+      jar:                 true,
+    });
   }
 
   authenticated(): boolean {
@@ -372,14 +389,8 @@ export class AppletManager implements nam.INAM {
   async refreshWorkerCrons() {
     const self = this;
     try {
-      const userApplets = await request.get({
-        headers:             {
-          'device-token':    this.options.token,
-        },
-        baseUrl:             this.options.nodesworkServer,
+      const userApplets: any = await this.serverApi.get({
         uri:                 '/v1/d/user-applets',
-        json:                true,
-        jar:                 true,
       });
       const newJobs: WorkerCronJob[] = _
         .chain(userApplets)
@@ -471,20 +482,15 @@ export class AppletManager implements nam.INAM {
 
   async executeCronJob(job: WorkerCronJob): Promise<any> {
     try {
-      const accounts = await request.get({
-        headers:             {
-          'device-token':    this.options.token,
-        },
-        baseUrl:             this.options.nodesworkServer,
-        uri:                 `/v1/d/user-applets/${job.userApplet}/accounts`,
-        json:                true,
-        jar:                 true,
+      const accounts = await this.serverApi.get({
+        uri: `/v1/d/user-applets/${job.userApplet}/accounts`,
       });
       LOG.debug('Fetch accounts successfully', accounts);
       const payload = {
         accounts,
       };
       const result = await this.work({
+        userApplet:     job.userApplet,
         route:          {
           appletId:     job.appletId,
           naType:       job.image.naType,
@@ -506,8 +512,33 @@ export class AppletManager implements nam.INAM {
     }
   }
 
+  async updateExecutionMetrics(
+    executionId: string,
+    options: sbase.metrics.MetricsOptions,
+  ) {
+    return await this.serverApi.post({
+      uri: `/v1/d/executions/${executionId}/metrics`,
+      body: {
+        dimensions:  options.dimensions,
+        name:        options.name,
+        value:       options.value,
+      },
+    });
+  }
+
   async work(options: nam.WorkOptions): Promise<any> {
     LOG.debug('Get work request', options);
+
+    const execution: any = await this.serverApi.post({
+      uri: `/v1/d/user-applets/${options.userApplet}/execute`,
+      body: {
+        worker: options.worker,
+      },
+    });
+
+    const headers: any = {};
+    headers[applet.constants.headers.request.EXECUTION_ID] = execution._id;
+
     const requestOptions: nam.RequestOptions = {
       appletId:     options.route.appletId,
       naType:       options.route.naType,
@@ -517,8 +548,28 @@ export class AppletManager implements nam.INAM {
       uri:          `/workers/${options.worker.handler}/${options.worker.name}`,
       method:       'POST',
       body:         options.payload,
+      headers,
     };
-    return await this.request(requestOptions);
+    try {
+      const result = await this.request(requestOptions);
+      this.updateExecutionMetrics(execution._id, {
+        dimensions: {
+          status: 'SUCCESS',
+        },
+        name: 'result',
+        value: metrics.Count(1),
+      });
+      return result;
+    } catch (e) {
+      this.updateExecutionMetrics(execution._id, {
+        dimensions: {
+          status: 'ERROR',
+        },
+        name: 'result',
+        value: metrics.Count(1),
+      });
+      throw e;
+    }
   }
 
   async request<T>(
@@ -550,16 +601,10 @@ export class AppletManager implements nam.INAM {
 
   async operateAccount(options: nam.AccountOperateOptions): Promise<any> {
     const requestOptions = {
-      uri:               `/v1/d/applets/${options.appletId}/accounts/${options.accountId}/operate`,
-      baseUrl:           this.options.nodesworkServer,
-      body:              options.body,
-      headers:           {
-        'device-token':  this.options.token,
-      },
-      json:              true,
-      jar:               true,
+      uri:   `/v1/d/applets/${options.appletId}/accounts/${options.accountId}/operate`,
+      body:  options.body,
     };
-    return await request.post(requestOptions);
+    return await this.serverApi.post(requestOptions);
   }
 
   async route(options: nam.RouteOptions): Promise<nam.Route> {
@@ -597,18 +642,12 @@ export class AppletManager implements nam.INAM {
     const runningApplets = await this.ps();
 
     try {
-      const resp = await request.post({
-        headers:             {
-          'device-token':    this.options.token,
-        },
-        baseUrl:             this.options.nodesworkServer,
+      const resp = await this.serverApi.post({
         uri:                 '/v1/d/devices',
         body:                {
           installedApplets,
           runningApplets,
         },
-        json:                true,
-        jar:                 true,
       });
       LOG.debug('Update device successfully');
     } catch (e) {

@@ -39,9 +39,10 @@ export namespace nam {
   }
 
   export interface WorkOptions {
-    route:    RouteOptions;
-    worker:   Worker;
-    payload:  object;
+    userApplet:  string;
+    route:       RouteOptions;
+    worker:      Worker;
+    payload:     object;
   }
 
   export interface RequestResponse {
