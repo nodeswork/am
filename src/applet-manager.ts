@@ -330,7 +330,7 @@ export class AppletManager implements nam.INAM {
   }
 
   async ps(): Promise<nam.AppletStatus[]> {
-    await this.checkEnvironment();
+    // await this.checkEnvironment();
 
     const psResult = await this.docker.command('ps');
     const psApplets = _.chain(psResult.containerList)
@@ -674,7 +674,49 @@ export class AppletManager implements nam.INAM {
 
     LOG.debug('Container Proxy configuration', this.containerProxy);
 
+    await this.ensureMongo({ prefix: 'nodeswork', port: 28330 });
+
     LOG.debug('Environment setup correctly');
+  }
+
+  private async ensureMongo(options: {
+    prefix:  string;
+    port:    number;
+  }): Promise<number> {
+    LOG.debug('Ensure mongo', options);
+
+    const name = `${options.prefix}-mongo`;
+
+    let containers = await this.docker.command('ps');
+
+    let container = _.find(containers.containerList, (c: any) => {
+      return c.names === name;
+    });
+
+    if (container != null) {
+      LOG.debug('Mongo is already running');
+      return options.port;
+    }
+
+    LOG.debug('Mongo is not running');
+    containers = await this.docker.command('ps -a');
+    container = _.find(containers.containerList, (c: any) => {
+      return c.names === name;
+    });
+
+    if (container != null) {
+      LOG.debug('Mongo is stopped, starting');
+      await this.docker.command(`start ${name}`);
+      return options.port;
+    }
+
+    LOG.debug('Start Mongo instance');
+    await this.docker.command(
+      `run --name ${name} -p ${options.port}:27017 -d mongo`,
+    );
+
+    LOG.debug('Mongo is running');
+    return options.port;
   }
 
   private name(options: nam.RouteOptions): string {
