@@ -1,6 +1,6 @@
 {
   "name": "@nodeswork/nam",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "description": "Applet manager for Nodeswork containers.",
   "main": "dist/index.js",
   "bin": {
