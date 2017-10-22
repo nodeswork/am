@@ -27,3 +27,12 @@ export interface ChildProcessResult {
 }
 
 export const findPort: () => Promise<number> = portFinder.getPortPromise;
+
+// TODO: Move to utils.
+
+import {
+  NodesworkError,
+  HTTP_RESPONSE_CASTER,
+}                       from '@nodeswork/utils';
+
+NodesworkError.addErrorCaster(HTTP_RESPONSE_CASTER);
