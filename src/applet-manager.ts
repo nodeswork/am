@@ -514,7 +514,7 @@ export class AppletManager implements nam.INAM {
 
   async updateExecutionMetrics(
     executionId: string,
-    options: sbase.metrics.MetricsOptions,
+    options: metrics.UpdateMetricsDataOptions<any>,
   ) {
     return await this.serverApi.post({
       uri: `/v1/d/executions/${executionId}/metrics`,
