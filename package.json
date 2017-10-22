@@ -40,10 +40,8 @@
     "typescript": "^2.5.2"
   },
   "dependencies": {
-    "@nodeswork/applet": "0.0.39",
+    "@nodeswork/applet": "0.0.59",
     "@nodeswork/logger": "^0.1.2",
-    "@nodeswork/sbase": "^0.1.39",
-    "@nodeswork/utils": "0.0.14",
     "@types/commander": "^2.9.2",
     "@types/compare-version": "^0.1.31",
     "@types/cron": "^1.2.1",
