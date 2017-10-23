@@ -585,8 +585,6 @@ export class AppletManager implements nam.INAM {
     headers[sbase.constants.headers.request.NODESWORK_FORWARDED_TO] = (
       routeAddress.route
     );
-    headers['user-applet-id'] = options.userApplet;
-
     const requestOptions = {
       uri:      routeAddress.target + options.uri,
       method:   options.method,

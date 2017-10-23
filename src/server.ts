@@ -1,5 +1,5 @@
 import * as Router           from 'koa-router';
-import * as Koa              from 'Koa';
+import * as Koa              from 'koa';
 import * as url              from 'url';
 import * as httpProxy        from 'http-proxy';
 import * as http             from 'http';
