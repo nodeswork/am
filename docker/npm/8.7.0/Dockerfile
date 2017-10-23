@@ -6,19 +6,20 @@ WORKDIR /usr/src/app
 
 COPY index.js .
 
+ARG package
 ARG version
+ARG appletToken
 
-ENV NODE_ENV production
-
-ENV PORT 28320
 ENV NW_NA_TYPE npm
 ENV NW_NA_VERSION 8.7.0
-ENV NW_PACKAGE_NAME @nodeswork/container-proxy
+ENV NW_PACKAGE_NAME $package
 ENV NW_PACKAGE_VERSION $version
 ENV NW_APPLET_TOKEN $appletToken
 
-RUN npm install @nodeswork/container-proxy@${version}
+RUN npm install ${package}@${version}
 
-EXPOSE 28320
+ENV NODE_ENV production
+
+EXPOSE 28900
 
 CMD node index.js

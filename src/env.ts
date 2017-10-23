@@ -5,8 +5,14 @@ import * as logger        from '@nodeswork/logger';
 const arch = os.arch();
 const LOG  = logger.getLogger();
 
-export let DOCKER_NODE_REPO:     string;
-export let DOCKER_MONGODB_REPO:  string;
+export let DOCKER_NODE_REPO:           string;
+export let DOCKER_MONGODB_REPO:        string;
+export let DEFAULT_NA:                 string = 'npm';
+export let DEFAULT_NA_VERSION:         string = '8.7.0';
+export let SUPPORTED_NA_NPM_VERSIONS:  string[] = [
+  '8.3.0',
+  '8.7.0',
+];
 
 switch (arch) {
   case 'arm':
@@ -28,4 +34,7 @@ switch (arch) {
 LOG.debug('Environment', {
   DOCKER_NODE_REPO,
   DOCKER_MONGODB_REPO,
+  DEFAULT_NA,
+  DEFAULT_NA_VERSION,
+  SUPPORTED_NA_NPM_VERSIONS,
 });

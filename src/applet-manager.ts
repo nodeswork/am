@@ -288,9 +288,7 @@ export class AppletManager implements nam.INAM {
         const [na, naType, naVersion, ...others] = image.repository.split('-');
         return na === 'na' && (
           naType === 'npm'
-        ) && (
-          naVersion === '8.3.0'
-        );
+        ) && env.SUPPORTED_NA_NPM_VERSIONS.indexOf(naVersion) >= 0;
       })
       .map((image) => {
         const [na, naType, naVersion, ...others] = image.repository.split('-');

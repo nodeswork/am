@@ -5,6 +5,7 @@ import * as commander          from 'commander';
 import { nam }                 from '../def';
 
 import { createAppletManager } from './cli-command';
+import * as env                from '../env';
 
 commander
   .option('--applet-id [applet id]')
@@ -22,12 +23,12 @@ const appletManager = createAppletManager();
       process.exit(1);
     }
     targets.push({
-      naType: 'npm',
-      naVersion: '8.3.0',
+      naType:       env.DEFAULT_NA,
+      naVersion:    env.DEFAULT_NA_VERSION,
       packageName,
       version,
-      appletId: commander.appletId || 'applet-id-placeholder',
-      appletToken: commander.appletToken || 'applet-token-placeholder'
+      appletId:     commander.appletId || 'applet-id-placeholder',
+      appletToken:  commander.appletToken || 'applet-token-placeholder'
     });
   }
 

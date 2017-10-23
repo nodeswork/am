@@ -21,7 +21,7 @@ const appletManager = createAppletManager();
     }
     targets.push({
       naType: 'npm',
-      naVersion: '8.3.0',
+      naVersion: '8.7.0',
       packageName,
       version,
     });
