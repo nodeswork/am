@@ -268,7 +268,7 @@ export class AppletManager implements nam.INAM {
       `--build-arg base=${env.DOCKER_NODE_REPO} ` +
       `--build-arg package=${options.packageName} ` +
       `--build-arg version=${options.version} ` +
-      `docker/${options.naType}/${options.naVersion}`;
+      `${__dirname}/../docker/${options.naType}/${options.naVersion}`;
 
     LOG.debug('Execute command to install applet', { cmd });
     try {
@@ -770,7 +770,9 @@ export class AppletManager implements nam.INAM {
     LOG.debug('Fetched latest version container-proxy', { version });
 
     const output = await this.docker.command(
-      `build -t nodeswork-container-proxy:${version} docker/container-proxy --build-arg version=${version} --build-arg base=${env.DOCKER_NODE_REPO}`,
+      `build -t nodeswork-container-proxy:${version} ` +
+      `${__dirname}/../docker/container-proxy --build-arg version=${version} ` +
+      `--build-arg base=${env.DOCKER_NODE_REPO}`,
     );
     LOG.debug('Building container proxy', output);
 
