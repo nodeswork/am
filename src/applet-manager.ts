@@ -30,6 +30,7 @@ import { app, server }             from './server';
 import { connectSocket }           from './socket';
 import { nam }                     from './def';
 import { containerProxyUrl }       from './paths';
+import * as env                    from './env';
 
 import compareVersion = require('compare-version');
 
@@ -263,7 +264,11 @@ export class AppletManager implements nam.INAM {
 
   async install(options: nam.AppletImage) {
     const docker = new Docker();
-    const cmd = `build -t ${imageName(options)} --build-arg package=${options.packageName} --build-arg version=${options.version} docker/${options.naType}/${options.naVersion}`;
+    const cmd = `build -t ${imageName(options)} ` +
+      `--build-arg base=${env.DOCKER_NODE_REPO} ` +
+      `--build-arg package=${options.packageName} ` +
+      `--build-arg version=${options.version} ` +
+      `docker/${options.naType}/${options.naVersion}`;
 
     LOG.debug('Execute command to install applet', { cmd });
     try {
@@ -713,7 +718,7 @@ export class AppletManager implements nam.INAM {
 
     LOG.debug('Container Proxy configuration', this.containerProxy);
 
-    await this.ensureMongo({ prefix: 'nodeswork', port: 28330 });
+    // await this.ensureMongo({ prefix: 'nodeswork', port: 28330 });
 
     LOG.debug('Environment setup correctly');
   }
@@ -767,7 +772,7 @@ export class AppletManager implements nam.INAM {
     LOG.debug('Fetched latest version container-proxy', { version });
 
     const output = await this.docker.command(
-      `build -t nodeswork-container-proxy:${version} docker/container-proxy --build-arg version=${version}`,
+      `build -t nodeswork-container-proxy:${version} docker/container-proxy --build-arg version=${version} --build-arg base=${env.DOCKER_NODE_REPO}`,
     );
     LOG.debug('Building container proxy', output);
 

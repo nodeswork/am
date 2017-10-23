@@ -1,4 +1,5 @@
-FROM node:8.3.0
+ARG base
+FROM ${base}:8.3.0
 
 # Create app directory
 WORKDIR /usr/src/app
