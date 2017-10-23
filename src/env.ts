@@ -1,6 +1,9 @@
-import * as os                     from 'os';
+import * as os            from 'os';
+
+import * as logger        from '@nodeswork/logger';
 
 const arch = os.arch();
+const LOG  = logger.getLogger();
 
 export let DOCKER_NODE_REPO:     string;
 export let DOCKER_MONGODB_REPO:  string;
@@ -21,3 +24,8 @@ switch (arch) {
     DOCKER_NODE_REPO = 'node';
     DOCKER_MONGODB_REPO = 'mongo';
 }
+
+LOG.debug('Environment', {
+  DOCKER_NODE_REPO,
+  DOCKER_MONGODB_REPO,
+});
