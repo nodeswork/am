@@ -55,6 +55,7 @@
     "@types/request-promise": "^4.1.37",
     "@types/socket.io-client": "^1.4.30",
     "@types/uuid": "^3.4.2",
+    "appdirectory": "^0.1.0",
     "child-process-promise": "^2.2.1",
     "commander": "^2.11.0",
     "compare-version": "^0.1.2",
